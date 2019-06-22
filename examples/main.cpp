@@ -1,8 +1,8 @@
 #include "canvas.h"
 
 #define PROGMEM
-#include "Fonts/Picopixel.h"
-#include "Fonts/Org_01.h"
+#include "fonts/Picopixel.h"
+#include "fonts/Org_01.h"
 #include <SDL2/SDL.h>
 
 #include <sys/time.h>
