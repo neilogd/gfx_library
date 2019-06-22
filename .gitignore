@@ -1,0 +1,5 @@
+build/linux/*
+build/windows/*
+*.o
+*.a
+
