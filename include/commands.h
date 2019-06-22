@@ -3,6 +3,7 @@
 #include "gfxfont.h"
 
 #include <cstdint>
+#include <cassert>
 
 enum class CommandType : uint8_t
 {
@@ -25,7 +26,7 @@ struct BaseCommand
     template<typename COMMAND_T>
     const COMMAND_T& as() const
     {
-        // TODO assert.
+        assert(COMMAND_T::TYPE == type && "Invalid conversion.");
         return *static_cast<const COMMAND_T*>(this);
     }
 };

@@ -24,12 +24,12 @@ private:
     {
         uint8_t* bufferNext = bufferCurr_ + sizeof(COMMAND_T);
 
-        // TODO: debug only.        
+#ifdef _DEBUG
         if(bufferNext >= bufferEnd_)
         {
             return nullptr;
         }
-        
+#endif
         void* cmd = reinterpret_cast<COMMAND_T*>(bufferCurr_);
         bufferCurr_ = bufferNext;
         return new (cmd) COMMAND_T;

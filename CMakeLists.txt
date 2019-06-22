@@ -29,7 +29,5 @@ INCLUDE_DIRECTORIES(
 ADD_LIBRARY(gfx_library ${SOURCE_FILES})
 
 # Add gfx_library_example
-#FIND_PACKAGE(SDL2 REQUIRED)
-
 ADD_EXECUTABLE(gfx_library_example ${EXAMPLE_FILES})
 TARGET_LINK_LIBRARIES(gfx_library_example gfx_library SDL2)

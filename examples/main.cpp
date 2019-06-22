@@ -106,11 +106,33 @@ public:
         }
     }
 
-    bool present(Canvas& canvas)
+	uint32_t calcHash(uint32_t input, const void* inData, size_t size)
+	{
+		const uint8_t* data = reinterpret_cast<const uint8_t*>(inData);
+		uint32_t hash = input;
+		while(size--)
+			hash = (uint32_t)*data++ + (hash << 6) + (hash << 16) - hash;
+		return hash;
+    }
+
+    bool present(Canvas& canvas, bool hashTile)
     {
-        //const int16_t s = w_ * h_;
-        canvas.writePixels(x_, y_, w_, h_, buffer_);
-        return true;
+        if(hashTile)
+        {
+            uint32_t hash = calcHash(0, buffer_, w_ * h_ * 2);
+            if(hash != hash_)
+            {
+                hash_ = hash;
+                canvas.writePixels(x_, y_, w_, h_, buffer_);
+                return true;
+            }
+            return false;
+        }
+        else
+        {
+            canvas.writePixels(x_, y_, w_, h_, buffer_);
+            return true;
+        }
     }
 
     uint16_t* buffer_;
@@ -207,6 +229,8 @@ int main()
         
 #if 1
         static bool debugShowTiles = true;
+        static bool debugHashTiles = true;
+
         static double debugTileExecuteTime = 0.0;
         static double debugTilePresentTime = 0.0;
         static double debugNumTileSamples = 0.0;
@@ -222,7 +246,7 @@ int main()
             debugTileExecuteTime += getMicroseconds();
 
             debugTilePresentTime -= getMicroseconds();
-            tileCanvas.present(canvas);
+            bool presentedTile = tileCanvas.present(canvas, debugHashTiles);
             debugTilePresentTime += getMicroseconds();
 
             debugNumTileSamples += 1.0;
@@ -230,7 +254,10 @@ int main()
             if(debugShowTiles)
             {
                 debugFrameTime += getMicroseconds();
-                canvas.drawBox(tileCanvas.x_, tileCanvas.y_, tileCanvas.w_, tileCanvas.h_, Color565From888(0, 255, 0));
+                uint16_t debugColor = Color565From888(255, 0, 0);
+                if(presentedTile)
+                    debugColor = Color565From888(0, 255, 0);
+                canvas.drawBox(tileCanvas.x_, tileCanvas.y_, tileCanvas.w_, tileCanvas.h_, debugColor);
                 debugFrameTime -= getMicroseconds();
             }
         }
