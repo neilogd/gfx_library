@@ -1,8 +1,13 @@
 #include "canvas.h"
+#include "tile_canvas.h"
 
 #define PROGMEM
 #include "fonts/Picopixel.h"
 #include "fonts/Org_01.h"
+
+#define PLATFORM_PC
+
+#if defined(PLATFORM_PC)
 #include <SDL2/SDL.h>
 
 #include <sys/time.h>
@@ -49,100 +54,6 @@ public:
     SDL_Texture* texture_;
 };
 
-class Tile_Canvas : public Canvas
-{
-public:
-    Tile_Canvas(uint16_t* buffer, int16_t x, int16_t y, int16_t w, int16_t h)
-        : Canvas(w, h)
-        , buffer_(buffer)
-        , x_(x)
-        , y_(y)
-        , w_(w)
-        , h_(h)
-    {
-
-    }
-
-    ~Tile_Canvas()
-    {
-    }
-
-    void writePixels(int16_t x, int16_t y, int16_t w, int16_t h, uint16_t* data) override
-    {
-        x -= x_;
-        y -= y_;
-
-        for(int j = 0; j < h; ++j)
-        {
-            for(int i = 0; i < w; ++i)
-            {
-                int16_t nx = x + i;
-                int16_t ny = y + j;
-                if(nx >= 0 && nx < w_ && ny >= 0 && ny < h_)
-                {
-                    buffer_[nx + ny * w_] = *data;
-                }
-                ++data;
-            }
-        }
-    }
-
-    void writePixels(int16_t x, int16_t y, int16_t w, int16_t h, uint16_t c) override
-    {
-        x -= x_;
-        y -= y_;
-
-        for(int j = 0; j < h; ++j)
-        {
-            for(int i = 0; i < w; ++i)
-            {
-                int16_t nx = x + i;
-                int16_t ny = y + j;
-                if(nx >= 0 && nx < w_ && ny >= 0 && ny < h_)
-                {
-                    buffer_[nx + ny * w_] = c;
-                }
-            }
-        }
-    }
-
-	uint32_t calcHash(uint32_t input, const void* inData, size_t size)
-	{
-		const uint8_t* data = reinterpret_cast<const uint8_t*>(inData);
-		uint32_t hash = input;
-		while(size--)
-			hash = (uint32_t)*data++ + (hash << 6) + (hash << 16) - hash;
-		return hash;
-    }
-
-    bool present(Canvas& canvas, bool hashTile)
-    {
-        if(hashTile)
-        {
-            uint32_t hash = calcHash(0, buffer_, w_ * h_ * 2);
-            if(hash != hash_)
-            {
-                hash_ = hash;
-                canvas.writePixels(x_, y_, w_, h_, buffer_);
-                return true;
-            }
-            return false;
-        }
-        else
-        {
-            canvas.writePixels(x_, y_, w_, h_, buffer_);
-            return true;
-        }
-    }
-
-    uint16_t* buffer_;
-    int16_t x_;
-    int16_t y_;
-    int16_t w_;
-    int16_t h_;
-    uint32_t hash_;
-};
-
 inline double getSeconds()
 {
 	timeval time;
@@ -179,7 +90,7 @@ int main()
     const int16_t TILE_WIDTH = 16;
     const int16_t TILE_HEIGHT = 16;
     uint16_t tileBuffer[TILE_WIDTH * TILE_HEIGHT];
-    std::vector<Tile_Canvas> tileCanvases;
+    std::vector<TileCanvas> tileCanvases;
     for(int j = 0; j < 128 / TILE_HEIGHT; ++j)
     {
         for(int i = 0; i < 128 / TILE_WIDTH; ++i)
@@ -187,6 +98,9 @@ int main()
             tileCanvases.emplace_back(tileBuffer,  i * TILE_WIDTH,  j * TILE_HEIGHT, TILE_WIDTH, TILE_HEIGHT);
         }
     }
+
+    static bool debugShowTiles = false;
+    static bool debugHashTiles = false;
 
     SDL_Event ev;
     for(;;)
@@ -197,6 +111,18 @@ int main()
             {
             case SDL_QUIT:
                 return 0;
+            case SDL_KEYDOWN:
+                if(!debugShowTiles && ev.key.keysym.sym == 't')
+                    debugShowTiles = true;
+                if(!debugHashTiles && ev.key.keysym.sym == 'h')
+                    debugHashTiles = true;
+                break;
+            case SDL_KEYUP:
+                if(debugShowTiles && ev.key.keysym.sym == 't')
+                    debugShowTiles = false;
+                if(debugHashTiles && ev.key.keysym.sym == 'h')
+                    debugHashTiles = false;
+                break;
             default:
                 break;
             }
@@ -228,9 +154,6 @@ int main()
         cmdList.drawBox(bx-1, by-1, 3, 3, Color565From888(255, 0, 0));
         
 #if 1
-        static bool debugShowTiles = true;
-        static bool debugHashTiles = true;
-
         static double debugTileExecuteTime = 0.0;
         static double debugTilePresentTime = 0.0;
         static double debugNumTileSamples = 0.0;
@@ -300,3 +223,12 @@ int main()
 
     return 0;
 }
+#else
+int main()
+{
+
+
+    return 0;
+}
+#endif
+

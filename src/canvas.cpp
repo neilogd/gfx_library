@@ -90,8 +90,8 @@ void Canvas::drawGlyph(int16_t x, int16_t y, const GFXglyph* glyph, uint16_t fg,
 
     x += glyph->xOffset;
     y += glyph->yOffset + font_->yAdvance;
-    const int8_t maxx = x + glyph->width;
-    const int8_t maxy = y + glyph->height;
+    const int16_t maxx = x + glyph->width;
+    const int16_t maxy = y + glyph->height;
     const uint8_t* bitmap = &font_->bitmap[glyph->bitmapOffset];
     uint8_t mask = 0;
     uint8_t byte = 0;
@@ -100,9 +100,9 @@ void Canvas::drawGlyph(int16_t x, int16_t y, const GFXglyph* glyph, uint16_t fg,
     if(fg != bg && glyphPixels <= PIXEL_BATCH_SIZE)
     {
         uint16_t pixelIndex = 0;
-        for(int8_t j = y; j < maxy; j++)
+        for(int16_t j = y; j < maxy; j++)
         {
-            for(int8_t i = x; i < maxx; i++)
+            for(int16_t i = x; i < maxx; i++)
             {
                 if((mask>>=1) == 0x0)
                 {
@@ -118,9 +118,9 @@ void Canvas::drawGlyph(int16_t x, int16_t y, const GFXglyph* glyph, uint16_t fg,
     }
     else
     {
-        for(int8_t j = y; j < maxy; j++)
+        for(int16_t j = y; j < maxy; j++)
         {
-            for(int8_t i = x; i < maxx; i++)
+            for(int16_t i = x; i < maxx; i++)
             {
                 if((mask>>=1) == 0x0)
                 {
@@ -135,8 +135,7 @@ void Canvas::drawGlyph(int16_t x, int16_t y, const GFXglyph* glyph, uint16_t fg,
                 else if(fg != bg)
                 {
                     writePixels(i, j, 1, 1, &bg);
-                }
-                
+                }                
             }
         }
     }

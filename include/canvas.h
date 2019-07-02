@@ -31,7 +31,7 @@ private:
 
     const GFXfont* font_;
 
-    static const int16_t PIXEL_BATCH_SIZE = 32;
+    static const int16_t PIXEL_BATCH_SIZE = 8 * 8;
     uint16_t pixelBatch_[PIXEL_BATCH_SIZE];
 
     int w_, h_;
