@@ -17,6 +17,8 @@ IF(DEFINED STM32_FAMILY)
 	SET_RAM_SECTION_NAME(ram)
 	SET_FLASH_SECTION_NAME(flash)
 	GENERATE_LINKER_FILE()
+ELSE()
+	ADD_DEFINITIONS(-DPLATFORM_PC)
 ENDIF()
 
 SET(INCLUDE_FILES
@@ -33,8 +35,9 @@ SET(SOURCE_FILES
 	"src/tile_canvas.cpp"
 )
 
-SET(EXAMPLE_FILES
+SET(EXAMPLE_TESTBED_FILES
 	"examples/main.cpp"
+	"examples/testbed.cpp"
 )
 
 INCLUDE_DIRECTORIES(
@@ -44,12 +47,11 @@ INCLUDE_DIRECTORIES(
 # Add gfx_library
 ADD_LIBRARY(gfx_library ${SOURCE_FILES})
 
-
-# Add gfx_library_example
-ADD_EXECUTABLE(gfx_library_example ${EXAMPLE_FILES})
+# Add gfx_library_testbed
+ADD_EXECUTABLE(gfx_library_testbed ${EXAMPLE_TESTBED_FILES})
 
 IF(DEFINED STM32_FAMILY)
-	TARGET_LINK_LIBRARIES(gfx_library_example gfx_library STM32${STM32_FAMILY}xx_HAL_Driver cmsis startup)
+	TARGET_LINK_LIBRARIES(gfx_library_testbed gfx_library STM32${STM32_FAMILY}xx_HAL_Driver cmsis startup)
 ELSE()
-	TARGET_LINK_LIBRARIES(gfx_library_example gfx_library SDL2)
+	TARGET_LINK_LIBRARIES(gfx_library_testbed gfx_library SDL2)
 ENDIF()

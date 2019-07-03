@@ -5,7 +5,9 @@
 #include "fonts/Picopixel.h"
 #include "fonts/Org_01.h"
 
-#define PLATFORM_PC
+extern void ExampleInit();
+extern void ExampleInput(uint16_t id, uint16_t val);
+extern void ExampleTick(Canvas& canvas);
 
 #if defined(PLATFORM_PC)
 #include <SDL2/SDL.h>
@@ -54,18 +56,6 @@ public:
     SDL_Texture* texture_;
 };
 
-inline double getSeconds()
-{
-	timeval time;
-	::gettimeofday( &time, NULL );
-	return time.tv_sec + ( (double)time.tv_usec / 1000000.0 );
-}
-
-inline double getMicroseconds()
-{
-    return getSeconds() * 1000000.0;
-}
-
 int main()
 {
     SDL_Init(SDL_INIT_VIDEO);
@@ -84,23 +74,7 @@ int main()
 
     SDL2_Canvas canvas(renderer);
 
-    uint8_t cmdListBuffer[1024];
-    CommandList cmdList(cmdListBuffer, sizeof(cmdListBuffer));
-
-    const int16_t TILE_WIDTH = 16;
-    const int16_t TILE_HEIGHT = 16;
-    uint16_t tileBuffer[TILE_WIDTH * TILE_HEIGHT];
-    std::vector<TileCanvas> tileCanvases;
-    for(int j = 0; j < 128 / TILE_HEIGHT; ++j)
-    {
-        for(int i = 0; i < 128 / TILE_WIDTH; ++i)
-        {
-            tileCanvases.emplace_back(tileBuffer,  i * TILE_WIDTH,  j * TILE_HEIGHT, TILE_WIDTH, TILE_HEIGHT);
-        }
-    }
-
-    static bool debugShowTiles = false;
-    static bool debugHashTiles = false;
+    ExampleInit();
 
     SDL_Event ev;
     for(;;)
@@ -112,102 +86,16 @@ int main()
             case SDL_QUIT:
                 return 0;
             case SDL_KEYDOWN:
-                if(!debugShowTiles && ev.key.keysym.sym == 't')
-                    debugShowTiles = true;
-                if(!debugHashTiles && ev.key.keysym.sym == 'h')
-                    debugHashTiles = true;
+                ExampleInput(ev.key.keysym.sym, true);
                 break;
             case SDL_KEYUP:
-                if(debugShowTiles && ev.key.keysym.sym == 't')
-                    debugShowTiles = false;
-                if(debugHashTiles && ev.key.keysym.sym == 'h')
-                    debugHashTiles = false;
-                break;
+                ExampleInput(ev.key.keysym.sym, false);
             default:
                 break;
             }
         }
 
-        cmdList.clear();
-
-        cmdList.drawFilledBox(0, 0, 128, 128, Color565From888(0, 0, 64));
-
-        const char* testString = "ABCDEFGHIJK\nLMNOPQRSTUV\nWXYZ\n1234567890\n!@#$%^&*()\n[]<>;:'-+=\n\n";
-        int16_t texty = 0;
-        cmdList.drawText(8, texty, testString, &Org_01, 0xffff, 0x0000);
-        texty += 48;
-
-        cmdList.drawFilledBox(0, texty, 64, texty + 16, Color565From888(255, 0, 255));
-        cmdList.drawBox(0, texty, 64, texty + 16, Color565From888(255, 255, 255));
-        cmdList.drawText(8, texty, testString, &Picopixel, 0xffff, 0xffff);
-        texty += 48;
-
-        static int16_t bx = 92;
-        static int16_t by = 98;
-        static int16_t dx = 2;
-        static int16_t dy = 1;
-
-        bx += dx;
-        by += dy;
-        if(bx >= 128 || bx <= 0) dx = -dx;
-        if(by >= 128 || by <= 0) dy = -dy;
-        cmdList.drawBox(bx-1, by-1, 3, 3, Color565From888(255, 0, 0));
-        
-#if 1
-        static double debugTileExecuteTime = 0.0;
-        static double debugTilePresentTime = 0.0;
-        static double debugNumTileSamples = 0.0;
-
-        static double debugFrameTime = 0.0;
-        static double debugNumFrameSamples = 0.0;
-
-        debugFrameTime -= getMicroseconds();
-        for(auto& tileCanvas : tileCanvases)
-        {
-            debugTileExecuteTime -= getMicroseconds();
-            tileCanvas.executeCommandList(cmdList);
-            debugTileExecuteTime += getMicroseconds();
-
-            debugTilePresentTime -= getMicroseconds();
-            bool presentedTile = tileCanvas.present(canvas, debugHashTiles);
-            debugTilePresentTime += getMicroseconds();
-
-            debugNumTileSamples += 1.0;
-
-            if(debugShowTiles)
-            {
-                debugFrameTime += getMicroseconds();
-                uint16_t debugColor = Color565From888(255, 0, 0);
-                if(presentedTile)
-                    debugColor = Color565From888(0, 255, 0);
-                canvas.drawBox(tileCanvas.x_, tileCanvas.y_, tileCanvas.w_, tileCanvas.h_, debugColor);
-                debugFrameTime -= getMicroseconds();
-            }
-        }
-        debugFrameTime += getMicroseconds();
-        debugNumFrameSamples += 1.0;
-
-#else
-        canvas.executeCommandList(cmdList);
-#endif
-
-        static int logCount = 0;
-        if(logCount++ > 30)
-        {
-            const int32_t cmdBufferSize = cmdList.end() - cmdList.begin(); 
-            printf("Stats:\n");
-            printf("- CommandList size: %d bytes\n", cmdBufferSize);
-            printf("- Tiles: %d\n", (int)tileCanvases.size());
-            printf("- Avg. execute per tile: %f us\n", debugTileExecuteTime / debugNumTileSamples);
-            printf("- Avg. present per tile: %f us\n", debugTilePresentTime / debugNumTileSamples);
-            printf("- Avg. frame time: %f us\n", debugFrameTime / debugNumFrameSamples);
-            debugTileExecuteTime = 0.0;
-            debugTilePresentTime = 0.0;
-            debugNumTileSamples = 0.0;
-            debugFrameTime = 0.0;
-            debugNumFrameSamples = 0.0;
-            logCount = 0;
-        }
+        ExampleTick(canvas);
 
         SDL_Rect srcRect = { 0, 0, 128, 128 };
         SDL_Rect dstRect = { 0, 0, 512, 512 };
@@ -224,9 +112,16 @@ int main()
     return 0;
 }
 #else
+
 int main()
 {
+    ExampleInit();
 
+    while(true)
+    {
+        // temporary!!
+        ExampleTick(*(Canvas*)(nullptr));
+    }
 
     return 0;
 }

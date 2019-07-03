@@ -11,6 +11,7 @@ constexpr uint16_t Color565From888(uint16_t r, uint16_t g, uint16_t b)
 class Canvas
 {
 public:
+    Canvas() = default;
     Canvas(int w, int h);
 
     void setFont(const GFXfont* font) { font_ = font; }
