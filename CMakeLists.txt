@@ -40,6 +40,16 @@ SET(EXAMPLE_TESTBED_FILES
 	"examples/testbed.cpp"
 )
 
+SET(EXAMPLE_00_FILES
+	"examples/main.cpp"
+	"examples/00-canvas-usage.cpp"
+)
+
+SET(EXAMPLE_01_FILES
+	"examples/main.cpp"
+	"examples/01-cmdlist-usage.cpp"
+)
+
 INCLUDE_DIRECTORIES(
 	"include"
 )
@@ -47,11 +57,17 @@ INCLUDE_DIRECTORIES(
 # Add gfx_library
 ADD_LIBRARY(gfx_library ${SOURCE_FILES})
 
-# Add gfx_library_testbed
+# Add examples
 ADD_EXECUTABLE(gfx_library_testbed ${EXAMPLE_TESTBED_FILES})
+ADD_EXECUTABLE(00-canvas-usage ${EXAMPLE_00_FILES})
+ADD_EXECUTABLE(01-cmdlist-usage ${EXAMPLE_01_FILES})
 
 IF(DEFINED STM32_FAMILY)
 	TARGET_LINK_LIBRARIES(gfx_library_testbed gfx_library STM32${STM32_FAMILY}xx_HAL_Driver cmsis startup)
+	TARGET_LINK_LIBRARIES(00-canvas-usage gfx_library STM32${STM32_FAMILY}xx_HAL_Driver cmsis startup)
+	TARGET_LINK_LIBRARIES(01-cmdlist-usage gfx_library STM32${STM32_FAMILY}xx_HAL_Driver cmsis startup)
 ELSE()
 	TARGET_LINK_LIBRARIES(gfx_library_testbed gfx_library SDL2)
+	TARGET_LINK_LIBRARIES(00-canvas-usage gfx_library SDL2)
+	TARGET_LINK_LIBRARIES(01-cmdlist-usage gfx_library SDL2)
 ENDIF()

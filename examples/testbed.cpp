@@ -6,24 +6,24 @@
 #include "fonts/Picopixel.h"
 #include "fonts/Org_01.h"
 
-namespace
-{
-    static uint8_t cmdListBuffer[1024];
-    static CommandList cmdList(cmdListBuffer, sizeof(cmdListBuffer));
+static uint8_t cmdListBuffer[1024];
+static CommandList cmdList(cmdListBuffer, sizeof(cmdListBuffer));
 
-    constexpr int16_t TILE_W = 16;
-    constexpr int16_t TILE_H = 16;
-    constexpr int16_t TILE_PIXELS = TILE_W * TILE_H;
-    constexpr int16_t TILES_X = 128 / TILE_W;
-    constexpr int16_t TILES_Y = 128 / TILE_H;
-    constexpr int16_t TILES_NUM = TILES_X * TILES_Y;
+constexpr int16_t TILE_W = 16;
+constexpr int16_t TILE_H = 16;
+constexpr int16_t TILE_PIXELS = TILE_W * TILE_H;
+constexpr int16_t TILES_X = 128 / TILE_W;
+constexpr int16_t TILES_Y = 128 / TILE_H;
+constexpr int16_t TILES_NUM = TILES_X * TILES_Y;
 
-    static uint16_t tileBuffer[TILE_PIXELS];
-    static TileCanvas tileCanvases[TILES_NUM];
+static uint16_t tileBuffer[TILE_PIXELS];
+static TileCanvas tileCanvases[TILES_NUM];
 
-    static bool debugShowTiles = false;
-    static bool debugHashTiles = false;
-}
+static bool debugShowTiles = false;
+static bool debugHashTiles = false;
+
+const char* ExampleName = "testbed";
+
 
 void ExampleInit()
 {

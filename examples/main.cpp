@@ -5,6 +5,7 @@
 #include "fonts/Picopixel.h"
 #include "fonts/Org_01.h"
 
+extern const char* ExampleName;
 extern void ExampleInit();
 extern void ExampleInput(uint16_t id, uint16_t val);
 extern void ExampleTick(Canvas& canvas);
@@ -60,8 +61,11 @@ int main()
 {
     SDL_Init(SDL_INIT_VIDEO);
 
+    char windowTitle[256];
+    sprintf(windowTitle, "GFX Library Example: %s", ExampleName);
+
     SDL_Window* window = SDL_CreateWindow(
-        "LCD Test",
+        windowTitle,
         SDL_WINDOWPOS_CENTERED,
         SDL_WINDOWPOS_CENTERED,
         512, 512,
