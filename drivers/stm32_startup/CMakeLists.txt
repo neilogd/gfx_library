@@ -16,9 +16,10 @@ function (set_flash_section_name)
     set (flash_section_name "${ARGV}" PARENT_SCOPE)
 endfunction()
 
-function (generate_linker_file)
+function (generate_linker_file LINKER_FILE)
     string (REGEX REPLACE ";" "\n\t" expanded_sections "${sections}")
     configure_file("${this_dir}/stm32.ld.in" ${this_binary_dir}/stm32.ld @ONLY)
+    SET(LINKER_FILE "${this_binary_dir}/stm32.ld" PARENT_SCOPE)
 endfunction()
 
 IF(${STM32_FAMILY} STREQUAL "F0")
@@ -38,8 +39,7 @@ SET(SOURCE_FILES
     "${ROOT_PATH}/drivers/CMSIS/Device/ST/STM32${STM32_FAMILY}xx/Source/Templates/gcc/${STM32_STARTUP_SOURCE}"
 )
 
-add_library(startup STATIC ${SOURCE_FILES})
-target_link_options(startup PUBLIC -T ${this_binary_dir}/stm32.ld)
+ADD_LIBRARY(startup STATIC ${SOURCE_FILES})
 TARGET_INCLUDE_DIRECTORIES(startup PUBLIC
     ${ROOT_PATH}/drivers/STM32${STM32_FAMILY}xx_HAL_Driver/Inc
     ${ROOT_PATH}/include
