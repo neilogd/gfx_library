@@ -11,13 +11,10 @@ static CommandList cmdList(cmdListBuffer, sizeof(cmdListBuffer));
 
 constexpr int16_t TILE_W = 16;
 constexpr int16_t TILE_H = 16;
-constexpr int16_t TILE_PIXELS = TILE_W * TILE_H;
-constexpr int16_t TILES_X = 128 / TILE_W;
-constexpr int16_t TILES_Y = 128 / TILE_H;
-constexpr int16_t TILES_NUM = TILES_X * TILES_Y;
+constexpr int16_t CANVAS_W = 128;
+constexpr int16_t CANVAS_H = 128;
 
-static uint16_t tileBuffer[TILE_PIXELS];
-static TileCanvas tileCanvases[TILES_NUM];
+static TileCanvas<TILE_W, TILE_H, CANVAS_W, CANVAS_H> tileCanvas;
 
 static bool debugShowTiles = false;
 static bool debugHashTiles = false;
@@ -27,13 +24,6 @@ const char* ExampleName = "testbed";
 
 void ExampleInit()
 {
-    // Setup tiles.
-    for(int i = 0; i < TILES_NUM; ++i)
-    {
-        int16_t x = i % TILES_X;
-        int16_t y = i / TILES_X;
-        new (&tileCanvases[i]) TileCanvas(tileBuffer,  x * TILE_W, y * TILE_H, TILE_W, TILE_H);
-    }
 
 }
 
@@ -86,33 +76,23 @@ void ExampleTick(Canvas& canvas)
     static int64_t debugTileExecuteTime = 0;
     static int64_t debugTilePresentTime = 0;
     static int64_t debugNumTileSamples = 0;
-
     static int64_t debugFrameTime = 0;
     static int64_t debugNumFrameSamples = 0;
 
+#if 0 
     debugFrameTime -= getMicroseconds();
-    for(auto& tileCanvas : tileCanvases)
-    {
-        debugTileExecuteTime -= getMicroseconds();
-        tileCanvas.executeCommandList(cmdList);
-        debugTileExecuteTime += getMicroseconds();
+#endif
 
-        debugTilePresentTime -= getMicroseconds();
-        bool presentedTile = tileCanvas.present(canvas, debugHashTiles);
-        debugTilePresentTime += getMicroseconds();
-
-        debugNumTileSamples += 1.0;
-
-        if(debugShowTiles)
+    tileCanvas.draw(canvas, debugHashTiles,
+        []()
         {
-            debugFrameTime += getMicroseconds();
-            uint16_t debugColor = Color565From888(255, 0, 0);
-            if(presentedTile)
-                debugColor = Color565From888(0, 255, 0);
-            canvas.drawBox(tileCanvas.x_, tileCanvas.y_, tileCanvas.w_, tileCanvas.h_, debugColor);
-            debugFrameTime -= getMicroseconds();
-        }
-    }
+            debugTileExecuteTime -= getMicroseconds();
+            tileCanvas.executeCommandList(cmdList);
+            debugTileExecuteTime += getMicroseconds();
+            debugNumTileSamples += 1.0;
+        });
+
+#if 0
     debugFrameTime += getMicroseconds();
     debugNumFrameSamples += 1.0;
 
@@ -133,6 +113,7 @@ void ExampleTick(Canvas& canvas)
         debugNumFrameSamples = 0.0;
         logCount = 0;
     }
+#endif
 
 #else
     canvas.executeCommandList(cmdList);

@@ -1,3 +1,3 @@
 #!/bin/bash
-cmake ../..
+cmake ../.. -DVERBOSE=1
 

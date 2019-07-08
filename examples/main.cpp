@@ -117,17 +117,80 @@ int main()
 }
 #else
 
+#include "isr.h"
+
+uint32_t Systick_Count = 0;
+uint32_t RTC_Count = 0;
+
+template<>
+struct IRQHandler<VectorTableEntry::Systick>
+{
+    static constexpr auto LambdaHandler = [](){ Systick_Count++; };
+    using constant_t = std::integral_constant<void(*)(), +LambdaHandler>;
+};
+
+template<>
+struct IRQHandler<VectorTableEntry::RTC>
+{
+    static constexpr auto LambdaHandler = [](){ RTC_Count++; };
+    using constant_t = std::integral_constant<void(*)(), +LambdaHandler>;
+};
+
+#include "vectors.h"
+
+#include "stm32f1xx_hal.h"
+
+class Dummy_Canvas : public Canvas
+{
+public:
+    Dummy_Canvas()
+        : Canvas(128,128)
+    {
+    }
+
+    ~Dummy_Canvas()
+    {
+    }
+
+    void writePixels(int16_t x, int16_t y, int16_t w, int16_t h, uint16_t* data) override
+    {
+        for(int j = 0; j < h; ++j)
+        {
+            for(int i = 0; i < w; ++i)
+            {
+                // do nothing
+            }
+        }
+    }
+
+    void writePixels(int16_t x, int16_t y, int16_t w, int16_t h, uint16_t c) override
+    {
+        for(int j = 0; j < h; ++j)
+        {
+            for(int i = 0; i < w; ++i)
+            {
+                // do nothing
+            }
+        }
+    }
+};
+
+
 int main()
 {
+    HAL_Init();
+
     ExampleInit();
+
+    Dummy_Canvas canvas;
 
     while(true)
     {
-        // temporary!!
-        ExampleTick(*(Canvas*)(nullptr));
+        ExampleTick(canvas);
     }
 
     return 0;
+
 }
 #endif
 

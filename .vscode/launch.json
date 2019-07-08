@@ -5,10 +5,10 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "(gdb) Launch gfx_library_example",
+            "name": "(gdb) Launch gfx_library_testbed",
             "type": "cppdbg",
             "request": "launch",
-            "program": "${workspaceFolder}/build/linux/gfx_library_example",
+            "program": "${workspaceFolder}/build/linux/gfx_library_testbed",
             "args": [],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",
