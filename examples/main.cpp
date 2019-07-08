@@ -117,24 +117,46 @@ int main()
 }
 #else
 
+<<<<<<< HEAD
 #include "stm32f1xx_hal.h"
 
 #include "isr.h"
 
+=======
+#include "isr.h"
+
+uint32_t Systick_Count = 0;
+>>>>>>> b891bb0dbe427cf9a9acfe63f8adf41bb918198c
 uint32_t RTC_Count = 0;
 
 template<>
 struct IRQHandler<VectorTableEntry::Systick>
 {
+<<<<<<< HEAD
     static constexpr auto LambdaHandler = [](){ 
         HAL_IncTick();
         HAL_SYSTICK_IRQHandler();
     };
+=======
+    static constexpr auto LambdaHandler = [](){ Systick_Count++; };
+    using constant_t = std::integral_constant<void(*)(), +LambdaHandler>;
+};
+
+template<>
+struct IRQHandler<VectorTableEntry::RTC>
+{
+    static constexpr auto LambdaHandler = [](){ RTC_Count++; };
+>>>>>>> b891bb0dbe427cf9a9acfe63f8adf41bb918198c
     using constant_t = std::integral_constant<void(*)(), +LambdaHandler>;
 };
 
 #include "vectors.h"
 
+<<<<<<< HEAD
+=======
+#include "stm32f1xx_hal.h"
+
+>>>>>>> b891bb0dbe427cf9a9acfe63f8adf41bb918198c
 class Dummy_Canvas : public Canvas
 {
 public:
@@ -170,6 +192,7 @@ public:
     }
 };
 
+<<<<<<< HEAD
 void SystemClock_Config(void)
 {
     RCC_OscInitTypeDef RCC_OscInitStruct;
@@ -211,10 +234,13 @@ void GPIO_Config()
 
     HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
 }
+=======
+>>>>>>> b891bb0dbe427cf9a9acfe63f8adf41bb918198c
 
 int main()
 {
     HAL_Init();
+<<<<<<< HEAD
     SystemClock_Config();
     GPIO_Config();
     
@@ -226,6 +252,8 @@ int main()
 
 #if 0
     HAL_Init();
+=======
+>>>>>>> b891bb0dbe427cf9a9acfe63f8adf41bb918198c
 
     ExampleInit();
 
@@ -234,6 +262,10 @@ int main()
     while(true)
     {
         ExampleTick(canvas);
+<<<<<<< HEAD
+=======
+    }
+>>>>>>> b891bb0dbe427cf9a9acfe63f8adf41bb918198c
 
         HAL_Delay(33); // ~30fps tick, ish.
     }
