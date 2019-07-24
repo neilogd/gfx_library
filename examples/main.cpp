@@ -145,7 +145,7 @@ public:
     {
     }
 
-    void writePixels(int16_t x, int16_t y, int16_t w, int16_t h, uint16_t* data) override
+    void writePixels(int16_t x, int16_t y, int16_t w, int16_t h, const uint16_t* data) override
     {
         for(int j = 0; j < h; ++j)
         {
