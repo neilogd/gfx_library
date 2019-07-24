@@ -1,4 +1,5 @@
 #include "canvas.h"
+#include "profiling.h"
 
 Canvas::Canvas(int w, int h)
     : w_(w)
@@ -9,6 +10,8 @@ Canvas::Canvas(int w, int h)
 
 void Canvas::executeCommandList(const CommandList& cmdList)
 {
+    ProfilingTimestamp("executeCommandList BEGIN");
+
     const BaseCommand* it = cmdList.begin();
     const BaseCommand* end = cmdList.end();
 
@@ -25,28 +28,28 @@ void Canvas::executeCommandList(const CommandList& cmdList)
             {
                 const auto& cmd = it->as<CommandDrawHLine>();
                 drawHLine(cmd.x, cmd.y, cmd.w, cmd.color);
-                it += sizeof(CommandDrawHLine);
+                it += cmd.size();
             }
             break;
         case CommandType::DRAW_V_LINE:
             {
                 const auto& cmd = it->as<CommandDrawVLine>();
                 drawVLine(cmd.x, cmd.y, cmd.h, cmd.color);
-                it += sizeof(CommandDrawVLine);
+                it += cmd.size();
             }
             break;
         case CommandType::DRAW_BOX:
             {
                 const auto& cmd = it->as<CommandDrawBox>();
                 drawBox(cmd.x, cmd.y, cmd.w, cmd.h, cmd.color);
-                it += sizeof(CommandDrawBox);
+                it += cmd.size();
             }
             break;
         case CommandType::DRAW_FILLED_BOX:
             {
                 const auto& cmd = it->as<CommandDrawFilledBox>();
                 drawFilledBox(cmd.x, cmd.y, cmd.w, cmd.h, cmd.color);
-                it += sizeof(CommandDrawFilledBox);
+                it += cmd.size();
             }
             break;
         case CommandType::DRAW_TEXT:
@@ -54,11 +57,20 @@ void Canvas::executeCommandList(const CommandList& cmdList)
                 const auto& cmd = it->as<CommandDrawText>();
                 setFont(cmd.font);
                 drawText(cmd.x, cmd.y, cmd.text, cmd.fg, cmd.bg);
-                it += sizeof(CommandDrawText);
+                it += cmd.size();
+            }
+            break;
+        case CommandType::DRAW_PIXELS:
+            {
+                const auto& cmd = it->as<CommandDrawPixels>();
+                writePixels(cmd.x, cmd.y, cmd.w, cmd.h, reinterpret_cast<const uint16_t*>(&cmd + 1));
+                it += cmd.size();
             }
             break;
         }
     }
+
+    ProfilingTimestamp("executeCommandList END");
 }
 
 void Canvas::drawHLine(int16_t x, int16_t y, int16_t w, uint16_t c)
@@ -82,6 +94,31 @@ void Canvas::drawBox(int16_t x, int16_t y, int16_t w, int16_t h, uint16_t c)
 void Canvas::drawFilledBox(int16_t x, int16_t y, int16_t w, int16_t h, uint16_t c)
 {
     writePixels(x, y, w, h, c);
+}
+
+void Canvas::drawText(int16_t x, int16_t y, const char* text, uint16_t fg, uint16_t bg)
+{
+    uint8_t c;
+    int16_t ox = x;
+    while((c = *text++))
+    {
+        if(c == '\n')
+        {
+            x = ox;
+            y += font_->yAdvance;
+        }
+        else if(c >= font_->first && c <= font_->last)
+        {
+            const GFXglyph* glyph = &font_->glyph[c - font_->first];
+            drawGlyph(x, y, glyph, fg, bg);
+            x += glyph->xAdvance;
+        }
+    }
+}
+
+void Canvas::drawPixels(int16_t x, int16_t y, int16_t w, int16_t h, const uint16_t* pixelData)
+{
+    writePixels(x, y, w, h, pixelData);
 }
 
 void Canvas::drawGlyph(int16_t x, int16_t y, const GFXglyph* glyph, uint16_t fg, uint16_t bg)
@@ -137,26 +174,6 @@ void Canvas::drawGlyph(int16_t x, int16_t y, const GFXglyph* glyph, uint16_t fg,
                     writePixels(i, j, 1, 1, &bg);
                 }                
             }
-        }
-    }
-}
-
-void Canvas::drawText(int16_t x, int16_t y, const char* text, uint16_t fg, uint16_t bg)
-{
-    uint8_t c;
-    int16_t ox = x;
-    while((c = *text++))
-    {
-        if(c == '\n')
-        {
-            x = ox;
-            y += font_->yAdvance;
-        }
-        else if(c >= font_->first && c <= font_->last)
-        {
-            const GFXglyph* glyph = &font_->glyph[c - font_->first];
-            drawGlyph(x, y, glyph, fg, bg);
-            x += glyph->xAdvance;
         }
     }
 }

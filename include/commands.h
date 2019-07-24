@@ -13,6 +13,7 @@ enum class CommandType : uint8_t
     DRAW_BOX,
     DRAW_FILLED_BOX,
     DRAW_TEXT,
+    DRAW_PIXELS,
 };
 
 struct BaseCommand
@@ -39,15 +40,20 @@ struct Command : BaseCommand
     Command()
         : BaseCommand(COMMAND_T::TYPE)
     {}
+
+    int16_t size() const
+    {
+        return sizeof(COMMAND_T);
+    }
 };
 
 struct CommandDrawHLine : Command<CommandDrawHLine>
 {
     static const CommandType TYPE = CommandType::DRAW_H_LINE;
 
-    int16_t x;
-    int16_t y;
-    int16_t w;
+    int16_t x : 11;
+    int16_t y : 11;
+    uint16_t w : 10;
     uint16_t color;
 };
 
@@ -55,9 +61,9 @@ struct CommandDrawVLine : Command<CommandDrawVLine>
 {
     static const CommandType TYPE = CommandType::DRAW_H_LINE;
 
-    int16_t x;
-    int16_t y;
-    int16_t h;
+    int16_t x : 11;
+    int16_t y : 11;
+    uint16_t h : 10;
     uint16_t color;
 };
 
@@ -65,10 +71,11 @@ struct CommandDrawBox : Command<CommandDrawBox>
 {
     static const CommandType TYPE = CommandType::DRAW_BOX;
 
-    int16_t x;
-    int16_t y;
-    int16_t w;
-    int16_t h;
+    int16_t x : 11;
+    int16_t y : 11;
+    uint16_t w : 10;
+    uint16_t h : 10;
+    uint16_t padding : 6;
     uint16_t color;
 };
 
@@ -76,10 +83,11 @@ struct CommandDrawFilledBox : Command<CommandDrawFilledBox>
 {
     static const CommandType TYPE = CommandType::DRAW_FILLED_BOX;
 
-    int16_t x;
-    int16_t y;
-    int16_t w;
-    int16_t h;
+    int16_t x : 11;
+    int16_t y : 11;
+    uint16_t w : 10;
+    uint16_t h : 10;
+    uint16_t padding : 6;
     uint16_t color;
 };
 
@@ -89,8 +97,26 @@ struct CommandDrawText : Command<CommandDrawText>
 
     const GFXfont* font;
     const char* text;
-    int16_t x;
-    int16_t y;
+    int16_t x : 11;
+    int16_t y : 11;
+    uint16_t padding : 10;
     uint16_t fg;
     uint16_t bg;
+};
+
+struct CommandDrawPixels : Command<CommandDrawPixels>
+{
+    static const CommandType TYPE = CommandType::DRAW_PIXELS;
+
+    int16_t x : 11;
+    int16_t y : 11;
+    uint16_t w : 10;
+    uint16_t h : 10;
+    uint16_t padding : 6;
+    // Pixel data after.
+
+    int16_t size() const
+    {
+        return sizeof(CommandDrawPixels) + (w * h * 2);
+    }
 };

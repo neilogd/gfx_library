@@ -16,9 +16,11 @@ public:
     BaseTileCanvas(int16_t tileW, int16_t tileH, int16_t tilesX, int16_t tilesY, uint16_t* pixBuffer, Tile* tileBuffer);
     ~BaseTileCanvas();
 
+    void init();
+
     int16_t begin(Canvas& canvas, bool hashTiles);
 
-    void writePixels(int16_t x, int16_t y, int16_t w, int16_t h, uint16_t* data) override;
+    void writePixels(int16_t x, int16_t y, int16_t w, int16_t h, const uint16_t* data) override;
     void writePixels(int16_t x, int16_t y, int16_t w, int16_t h, uint16_t c) override;
 
 	uint32_t calcHash(uint32_t input, const void* inData, size_t size);
@@ -42,6 +44,10 @@ protected:
     Tile* currTile_;
     Canvas* canvas_;
     bool hashTiles_;
+
+#if defined(PLATFORM_STM32)
+    CRC_HandleTypeDef hcrc_;
+#endif
 };
 
 template<int16_t TILE_W, int16_t TILE_H, int16_t CANVAS_W, int16_t CANVAS_H>

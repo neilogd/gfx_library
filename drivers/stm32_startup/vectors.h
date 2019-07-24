@@ -94,12 +94,5 @@ __attribute__((section (".VectorTable"),used))
     VectorTableEntry::Dma2Channel2,
     VectorTableEntry::Dma2Channel3,
     VectorTableEntry::Dma2Channel4,
-    VectorTableEntry::Dma2Channel5,
-    VectorTableEntry::Eth,
-    VectorTableEntry::Eth_WKUP,
-    VectorTableEntry::Can2_TX,
-    VectorTableEntry::Can2_RX0,
-    VectorTableEntry::Can2_RX1,
-    VectorTableEntry::Can2_SCE,
-    VectorTableEntry::Otg_FS
+    VectorTableEntry::Dma2Channel5
     >().data;

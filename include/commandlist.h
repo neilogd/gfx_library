@@ -13,7 +13,8 @@ public:
     void drawBox(int16_t x, int16_t y, int16_t w, int16_t h, uint16_t c);
     void drawFilledBox(int16_t x, int16_t y, int16_t w, int16_t h, uint16_t c);
     void drawText(int16_t x, int16_t y, const char* text, const GFXfont* font, uint16_t fg, uint16_t bg);
-
+    void drawPixels(int16_t x, int16_t y, int16_t w, int16_t h, const uint16_t* pixelData);
+ 
     const BaseCommand* begin() const { return reinterpret_cast<BaseCommand*>(bufferBegin_); }
     const BaseCommand* end() const { return reinterpret_cast<BaseCommand*>(bufferCurr_); }
     void clear() { bufferCurr_ = bufferBegin_; }
@@ -33,6 +34,22 @@ private:
         void* cmd = reinterpret_cast<COMMAND_T*>(bufferCurr_);
         bufferCurr_ = bufferNext;
         return new (cmd) COMMAND_T;
+    }
+
+    template<typename DATA_T>
+    DATA_T* allocData(uint16_t num)
+    {
+        uint8_t* bufferNext = bufferCurr_ + sizeof(DATA_T) * num;
+
+#ifdef _DEBUG
+        if(bufferNext >= bufferEnd_)
+        {
+            return nullptr;
+        }
+#endif
+        void* data = reinterpret_cast<DATA_T*>(bufferCurr_);
+        bufferCurr_ = bufferNext;
+        return reinterpret_cast<DATA_T*>(data);
     }
 
     uint8_t* bufferBegin_;

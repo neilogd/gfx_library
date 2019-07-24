@@ -8,7 +8,7 @@ SET(CMAKE_CXX_STANDARD 17)
 INCLUDE(configs)
 
 IF(DEFINED STM32_FAMILY)
-	ADD_DEFINITIONS(-DSTM32F103x6)
+	ADD_DEFINITIONS(-DSTM32F103xB)
 	ADD_SUBDIRECTORY(drivers/STM32F1xx_HAL_Driver)
 	ADD_SUBDIRECTORY(drivers/CMSIS)
 	ADD_SUBDIRECTORY(drivers/stm32_startup)
@@ -21,6 +21,8 @@ IF(DEFINED STM32_FAMILY)
 
 	SET(LINKER_FILE "")
 	GENERATE_LINKER_FILE(LINKER_FILE)
+
+	ADD_DEFINITIONS(-DPLATFORM_STM32)
 ELSE()
 	ADD_DEFINITIONS(-DPLATFORM_PC)
 ENDIF()
@@ -31,17 +33,32 @@ SET(INCLUDE_FILES
 	"include/commands.h"
 	"include/gfxfont.h"
 	"include/tile_canvas.h"
+	"src/display_st7735.h"
+	"src/profiling.h"
 )
 
 SET(SOURCE_FILES
 	"src/canvas.cpp"
 	"src/commandlist.cpp"
 	"src/tile_canvas.cpp"
+	"src/display_st7735.cpp"
+	"src/profiling.cpp"
 )
 
 SET(EXAMPLE_TESTBED_FILES
 	"examples/main.cpp"
 	"examples/testbed.cpp"
+)
+
+SET(EXAMPLE_SSRE_FILES
+	"examples/ssre/Source/Library/SSRE_Fixed.c"
+	"examples/ssre/Source/Library/SSRE_Mat44.c"
+	"examples/ssre/Source/Library/SSRE_Math.c"
+	"examples/ssre/Source/Library/SSRE_MatrixStack.c"
+	"examples/ssre/Source/Library/SSRE_PixelBuffer.c"
+	"examples/ssre/Source/Library/SSRE_Vec4.c"
+	"examples/ssre/Source/Library/SSRE_VertexProcessor.c"
+	"examples/ssre/Source/Library/SSRE.c"
 )
 
 SET(EXAMPLE_00_FILES
@@ -57,6 +74,9 @@ SET(EXAMPLE_01_FILES
 INCLUDE_DIRECTORIES(
 	"include"
 	"drivers/stm32_startup"
+
+	// temp
+	"examples/ssre/Source/Library"
 )
 
 # Add gfx_library
@@ -68,14 +88,17 @@ ADD_EXECUTABLE(00-canvas-usage ${EXAMPLE_00_FILES})
 ADD_EXECUTABLE(01-cmdlist-usage ${EXAMPLE_01_FILES})
 
 IF(DEFINED STM32_FAMILY)
+	TARGET_LINK_LIBRARIES(gfx_library STM32${STM32_FAMILY}xx_HAL_Driver cmsis startup)
+
 	TARGET_LINK_OPTIONS(gfx_library_testbed PUBLIC -T ${LINKER_FILE})
-	TARGET_LINK_LIBRARIES(gfx_library_testbed gfx_library STM32${STM32_FAMILY}xx_HAL_Driver cmsis startup)
+	TARGET_LINK_LIBRARIES(gfx_library_testbed gfx_library)
 
 	TARGET_LINK_OPTIONS(00-canvas-usage PUBLIC -T ${LINKER_FILE})
-	TARGET_LINK_LIBRARIES(00-canvas-usage gfx_library STM32${STM32_FAMILY}xx_HAL_Driver cmsis startup)
+	TARGET_LINK_LIBRARIES(00-canvas-usage gfx_library)
 
 	TARGET_LINK_OPTIONS(01-cmdlist-usage PUBLIC -T ${LINKER_FILE})
-	TARGET_LINK_LIBRARIES(01-cmdlist-usage gfx_library STM32${STM32_FAMILY}xx_HAL_Driver cmsis startup)
+	TARGET_LINK_LIBRARIES(01-cmdlist-usage gfx_library)
+
 ELSE()
 	TARGET_LINK_LIBRARIES(gfx_library_testbed gfx_library SDL2)
 	TARGET_LINK_LIBRARIES(00-canvas-usage gfx_library SDL2)

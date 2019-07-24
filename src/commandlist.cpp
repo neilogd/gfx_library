@@ -1,5 +1,7 @@
 #include "commandlist.h"
 
+#include <memory.h>
+
 CommandList::CommandList(uint8_t* buffer, uint32_t bufferSize)
     : bufferBegin_(buffer)
     , bufferEnd_(buffer + bufferSize)
@@ -55,4 +57,15 @@ void CommandList::drawText(int16_t x, int16_t y, const char* text, const GFXfont
     cmd->font = font;
     cmd->fg = fg;
     cmd->bg = bg;
+}
+
+void CommandList::drawPixels(int16_t x, int16_t y, int16_t w, int16_t h, const uint16_t* pixelData)
+{
+    auto* cmd = alloc<CommandDrawPixels>();
+    cmd->x = x;
+    cmd->y = y;
+    cmd->w = w;
+    cmd->h = h;
+    auto* data = allocData<uint16_t>(w * h);
+    memcpy(data, pixelData, w * h * 2);
 }

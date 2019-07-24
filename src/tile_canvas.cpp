@@ -1,4 +1,9 @@
 #include "tile_canvas.h"
+#include "profiling.h"
+
+#include <algorithm>
+
+#pragma GCC optimize ("O3")
 
 BaseTileCanvas::BaseTileCanvas(int16_t tileW, int16_t tileH, int16_t tilesX, int16_t tilesY, uint16_t* pixBuffer, Tile* tileBuffer)
     : Canvas(tileW * tilesX, tileH * tilesY)
@@ -27,6 +32,16 @@ BaseTileCanvas::~BaseTileCanvas()
 {
 }
 
+void BaseTileCanvas::init()
+{
+#if defined(PLATFORM_STM32)
+    __HAL_RCC_CRC_CLK_ENABLE();
+
+    hcrc_.Instance = CRC;
+    HAL_CRC_Init(&hcrc_);
+#endif
+}
+
 void BaseTileCanvas::flush()
 {
     if(hashTiles_)
@@ -44,23 +59,38 @@ void BaseTileCanvas::flush()
     }
 }
 
-void BaseTileCanvas::writePixels(int16_t x, int16_t y, int16_t w, int16_t h, uint16_t* data)
+void BaseTileCanvas::writePixels(int16_t x, int16_t y, int16_t w, int16_t h, const uint16_t* data)
 {
     assert(currTile_ != nullptr);
-    x -= currTile_->x_;
-    y -= currTile_->y_;
-
-    for(int j = 0; j < h; ++j)
+    
+    const int16_t wminx = x;
+    const int16_t wminy = y;
+    const int16_t wmaxx = wminx + w;
+    const int16_t wmaxy = wminy + h;
+    const int16_t tminx = currTile_->x_;
+    const int16_t tminy = currTile_->y_;
+    const int16_t tmaxx = tminx + tileW_;
+    const int16_t tmaxy = tminy + tileH_;
+    if(wminx > tmaxx || wminy > tmaxy ||
+       wmaxx < tminx || wmaxy < tminy)
     {
-        int16_t ny = y + j;
-        for(int i = 0; i < w; ++i)
+        return;
+    }
+    {
+        x -= tminx;
+        y -= tminy;
+
+        for(int j = 0; j < h; ++j)
         {
-            int16_t nx = x + i;
-            if(nx >= 0 && nx < tileW_ && ny >= 0 && ny < tileH_)
+            int16_t ny = y + j;
+            int16_t nx = x;
+            for(int i = 0; i < w; ++i)
             {
-                pixBuffer_[nx + ny * tileW_] = *data;
+                if(nx >= 0 && nx < tileW_ && ny >= 0 && ny < tileH_)
+                    pixBuffer_[nx + ny * tileW_] = *data;
+                ++nx;
+                ++data;
             }
-            ++data;
         }
     }
 }
@@ -68,28 +98,53 @@ void BaseTileCanvas::writePixels(int16_t x, int16_t y, int16_t w, int16_t h, uin
 void BaseTileCanvas::writePixels(int16_t x, int16_t y, int16_t w, int16_t h, uint16_t c)
 {
     assert(currTile_ != nullptr);
-    x -= currTile_->x_;
-    y -= currTile_->y_;
 
-    for(int j = 0; j < h; ++j)
+    const int16_t wminx = x;
+    const int16_t wminy = y;
+    const int16_t wmaxx = wminx + w;
+    const int16_t wmaxy = wminy + h;
+    const int16_t tminx = currTile_->x_;
+    const int16_t tminy = currTile_->y_;
+    const int16_t tmaxx = tminx + tileW_;
+    const int16_t tmaxy = tminy + tileH_;
+    if(wminx > tmaxx || wminy > tmaxy ||
+       wmaxx < tminx || wmaxy < tminy)
     {
-        int16_t ny = y + j;
-        for(int i = 0; i < w; ++i)
+        return;
+    }
+    {
+        const int16_t minx = std::max(wminx - tminx, 0);
+        const int16_t miny = std::max(wminy - tminy, 0);
+        const int16_t maxx = std::min(wmaxx, tmaxx) - tminx;
+        const int16_t maxy = std::min(wmaxy, tmaxy) - tminy;
+        const int16_t pixels = maxx - minx;
+
+        uint16_t* pixBuffer = pixBuffer_ + (miny * tileW_);
+        for(int ny = miny; ny < maxy; ++ny)
         {
-            int16_t nx = x + i;
-            if(nx >= 0 && nx < tileW_ && ny >= 0 && ny < tileH_)
+            for(int nx = minx; nx < maxx; ++nx)
             {
-                pixBuffer_[nx + ny * tileW_] = c;
+                pixBuffer[nx] = c;
             }
+            pixBuffer += tileW_;
         }
     }
 }
 
 uint32_t BaseTileCanvas::calcHash(uint32_t input, const void* inData, size_t size)
 {
-    const uint8_t* data = reinterpret_cast<const uint8_t*>(inData);
+    ProfilingTimestamp("BaseTileCanvas::calcHash BEGIN");
+
+#if defined(PLATFORM_STM32) && defined(USE_CRC_PERIPHERAL)
+    uint32_t hash = HAL_CRC_Calculate(&hcrc_, (uint32_t*)inData, size >> 2);
+#else
+    const uint32_t* data = reinterpret_cast<const uint32_t*>(inData);
     uint32_t hash = input;
+    size >>= 2;
     while(size--)
-        hash = (uint32_t)*data++ + (hash << 6) + (hash << 16) - hash;
+        hash = *data++ + (hash << 6) + (hash << 16) - hash;
+#endif
+
+    ProfilingTimestamp("BaseTileCanvas::calcHash END");
     return hash;
 }
