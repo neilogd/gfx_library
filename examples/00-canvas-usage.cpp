@@ -1,10 +1,6 @@
 #include "canvas.h"
 #include "common.h"
 
-#define PROGMEM
-#include "fonts/Picopixel.h"
-#include "fonts/Org_01.h"
-
 const char* ExampleName = "00-canvas-usage";
 
 void ExampleInit()

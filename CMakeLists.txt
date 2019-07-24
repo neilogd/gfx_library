@@ -71,6 +71,11 @@ SET(EXAMPLE_01_FILES
 	"examples/01-cmdlist-usage.cpp"
 )
 
+SET(EXAMPLE_02_FILES
+	"examples/main.cpp"
+	"examples/02-tilecanvas-usage.cpp"
+)
+
 INCLUDE_DIRECTORIES(
 	"include"
 	"drivers/stm32_startup"
@@ -86,6 +91,7 @@ ADD_LIBRARY(gfx_library ${SOURCE_FILES})
 ADD_EXECUTABLE(gfx_library_testbed ${EXAMPLE_TESTBED_FILES})
 ADD_EXECUTABLE(00-canvas-usage ${EXAMPLE_00_FILES})
 ADD_EXECUTABLE(01-cmdlist-usage ${EXAMPLE_01_FILES})
+ADD_EXECUTABLE(02-tilecanvas-usage ${EXAMPLE_02_FILES})
 
 IF(DEFINED STM32_FAMILY)
 	TARGET_LINK_LIBRARIES(gfx_library STM32${STM32_FAMILY}xx_HAL_Driver cmsis startup)
@@ -99,8 +105,11 @@ IF(DEFINED STM32_FAMILY)
 	TARGET_LINK_OPTIONS(01-cmdlist-usage PUBLIC -T ${LINKER_FILE})
 	TARGET_LINK_LIBRARIES(01-cmdlist-usage gfx_library)
 
+	TARGET_LINK_OPTIONS(02-tilecanvas-usage PUBLIC -T ${LINKER_FILE})
+	TARGET_LINK_LIBRARIES(02-tilecanvas-usage gfx_library)
 ELSE()
 	TARGET_LINK_LIBRARIES(gfx_library_testbed gfx_library SDL2)
 	TARGET_LINK_LIBRARIES(00-canvas-usage gfx_library SDL2)
 	TARGET_LINK_LIBRARIES(01-cmdlist-usage gfx_library SDL2)
+	TARGET_LINK_LIBRARIES(02-tilecanvas-usage gfx_library SDL2)
 ENDIF()
