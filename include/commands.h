@@ -10,6 +10,7 @@ enum class CommandType : uint8_t
     NONE,
     DRAW_H_LINE,
     DRAW_V_LINE,
+    DRAW_LINE,
     DRAW_BOX,
     DRAW_FILLED_BOX,
     DRAW_TEXT,
@@ -64,6 +65,18 @@ struct CommandDrawVLine : Command<CommandDrawVLine>
     int16_t x : 11;
     int16_t y : 11;
     uint16_t h : 10;
+    uint16_t color;
+};
+
+struct CommandDrawLine : Command<CommandDrawLine>
+{
+    static const CommandType TYPE = CommandType::DRAW_LINE;
+
+    int16_t x0 : 11;
+    int16_t y0 : 11;
+    int16_t x1 : 11;
+    int16_t y1 : 11;
+    uint16_t padding : 4;
     uint16_t color;
 };
 

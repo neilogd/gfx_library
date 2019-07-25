@@ -38,6 +38,13 @@ void Canvas::executeCommandList(const CommandList& cmdList)
                 it += cmd.size();
             }
             break;
+        case CommandType::DRAW_LINE:
+            {
+                const auto& cmd = it->as<CommandDrawLine>();
+                drawLine(cmd.x0, cmd.y0, cmd.x1, cmd.y1, cmd.color);
+                it += cmd.size();
+            }
+            break;
         case CommandType::DRAW_BOX:
             {
                 const auto& cmd = it->as<CommandDrawBox>();
@@ -81,6 +88,44 @@ void Canvas::drawHLine(int16_t x, int16_t y, int16_t w, uint16_t c)
 void Canvas::drawVLine(int16_t x, int16_t y, int16_t h, uint16_t c)
 {
     writePixels(x, y, 1, h, c);
+}
+
+void Canvas::drawLine(int16_t x0, int16_t y0, int16_t x1, int16_t y1, uint16_t c)
+{
+    const int16_t dx = x1 - x0;
+    const int16_t dy = y1 - y0;
+
+    if(dx > dy)
+    {
+        int16_t d = 2 * dy - dx;
+        int16_t y = y0;
+        for(int16_t x = x0; x < x1; ++x)
+        {
+            writePixels(x, y, 1, 1, c);
+            if(d > 0)
+            {
+                ++y;
+                d -= 2 * dx;
+            }
+            d += 2 * dy;
+        }
+    }
+    else
+    {
+        int16_t d = 2 * dx - dy;
+        int16_t x = x0;
+        for(int16_t y = y0; y < y1; ++y)
+        {
+            writePixels(x, y, 1, 1, c);
+            if(d > 0)
+            {
+                ++x;
+                d -= 2 * dy;
+            }
+            d += 2 * dx;
+        }
+    }
+    
 }
 
 void Canvas::drawBox(int16_t x, int16_t y, int16_t w, int16_t h, uint16_t c)

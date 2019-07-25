@@ -72,6 +72,12 @@ void ExampleTick(Canvas& canvas)
     if(by >= 128 || by <= 0) dy = -dy;
     cmdList.drawBox(bx-1, by-1, 3, 3, Color565From888(255, 0, 0));
 
+    cmdList.drawLine(64, 64, 128, 64, Color565From888(255, 255, 255));
+    cmdList.drawLine(64, 64, 64, 128, Color565From888(255, 255, 255));
+    cmdList.drawLine(64, 64, 128, 96, Color565From888(255, 255, 255));
+    cmdList.drawLine(64, 64, 96, 128, Color565From888(255, 255, 255));
+    cmdList.drawLine(64, 64, 128, 128, Color565From888(255, 255, 255));
+
 #if defined(PLATFORM_PC)
     static int64_t debugTileExecuteTime = 0;
     static int64_t debugTilePresentTime = 0;

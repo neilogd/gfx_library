@@ -10,6 +10,7 @@ public:
 
     void drawHLine(int16_t x, int16_t y, int16_t w, uint16_t c);
     void drawVLine(int16_t x, int16_t y, int16_t h, uint16_t c);
+    void drawLine(int16_t x0, int16_t y0, int16_t x1, int16_t y1, uint16_t c);
     void drawBox(int16_t x, int16_t y, int16_t w, int16_t h, uint16_t c);
     void drawFilledBox(int16_t x, int16_t y, int16_t w, int16_t h, uint16_t c);
     void drawText(int16_t x, int16_t y, const char* text, const GFXfont* font, uint16_t fg, uint16_t bg);

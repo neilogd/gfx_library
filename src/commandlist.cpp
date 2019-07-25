@@ -28,6 +28,16 @@ void CommandList::drawVLine(int16_t x, int16_t y, int16_t h, uint16_t c)
     cmd->color = c;
 }
 
+void CommandList::drawLine(int16_t x0, int16_t y0, int16_t x1, int16_t y1, uint16_t c)
+{
+    auto* cmd = alloc<CommandDrawLine>();
+    cmd->x0 = x0;
+    cmd->y0 = y0;
+    cmd->x1 = x1;
+    cmd->y1 = y1;
+    cmd->color = c;
+}
+
 void CommandList::drawBox(int16_t x, int16_t y, int16_t w, int16_t h, uint16_t c)
 {
     auto* cmd = alloc<CommandDrawBox>();
