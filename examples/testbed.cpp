@@ -2,6 +2,8 @@
 #include "tile_canvas.h"
 #include "common.h"
 
+#include <cmath>
+
 #define PROGMEM
 #include "fonts/Picopixel.h"
 #include "fonts/Org_01.h"
@@ -76,7 +78,12 @@ void ExampleTick(Canvas& canvas)
     cmdList.drawLine(64, 64, 64, 128, Color565From888(255, 255, 255));
     cmdList.drawLine(64, 64, 128, 96, Color565From888(255, 255, 255));
     cmdList.drawLine(64, 64, 96, 128, Color565From888(255, 255, 255));
-    cmdList.drawLine(64, 64, 128, 128, Color565From888(255, 255, 255));
+    cmdList.drawLine(128, 128, 64, 64, Color565From888(255, 255, 255));
+
+
+    static float ticker = 0.0f;
+    ticker += 0.1f;
+    cmdList.drawLine(64, 64, 64 + std::cos(ticker) * 32, 64 + std::sin(ticker) * 32, Color565From888(255, 255, 255));
 
 #if defined(PLATFORM_PC)
     static int64_t debugTileExecuteTime = 0;

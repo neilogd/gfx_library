@@ -1,6 +1,21 @@
 #include "canvas.h"
 #include "profiling.h"
 
+namespace
+{
+    inline int16_t inline_abs(int16_t a)
+    {
+        return a < 0 ? -a : a;
+    }
+
+    inline void inline_swap(int16_t& a, int16_t& b)
+    {
+        int16_t temp = a;
+        b = a;
+        a = temp;
+    }
+}
+
 Canvas::Canvas(int w, int h)
     : w_(w)
     , h_(h)
@@ -92,11 +107,17 @@ void Canvas::drawVLine(int16_t x, int16_t y, int16_t h, uint16_t c)
 
 void Canvas::drawLine(int16_t x0, int16_t y0, int16_t x1, int16_t y1, uint16_t c)
 {
-    const int16_t dx = x1 - x0;
-    const int16_t dy = y1 - y0;
-
-    if(dx > dy)
+    auto drawLineX = [this](int16_t x0, int16_t x1, int16_t y0, int16_t y1, uint16_t c)
     {
+        int16_t dx = x1 - x0;
+        int16_t dy = y1 - y0;
+        int16_t yi = dy < 0 ? -1 : 1;
+        int16_t xi = 1;
+        if(dy < 0)
+        {
+            yi = -1;
+            dy = -dy;
+        }
         int16_t d = 2 * dy - dx;
         int16_t y = y0;
         for(int16_t x = x0; x < x1; ++x)
@@ -104,14 +125,23 @@ void Canvas::drawLine(int16_t x0, int16_t y0, int16_t x1, int16_t y1, uint16_t c
             writePixels(x, y, 1, 1, c);
             if(d > 0)
             {
-                ++y;
+                y += yi;
                 d -= 2 * dx;
             }
             d += 2 * dy;
         }
-    }
-    else
+    };
+
+    auto drawLineY = [this](int16_t x0, int16_t x1, int16_t y0, int16_t y1, uint16_t c)
     {
+        int16_t dx = x1 - x0;
+        int16_t dy = y1 - y0;
+        int16_t xi = 1;
+        if(dx < 0)
+        {
+            xi = -1;
+            dx = -dx;
+        }
         int16_t d = 2 * dx - dy;
         int16_t x = x0;
         for(int16_t y = y0; y < y1; ++y)
@@ -119,13 +149,31 @@ void Canvas::drawLine(int16_t x0, int16_t y0, int16_t x1, int16_t y1, uint16_t c
             writePixels(x, y, 1, 1, c);
             if(d > 0)
             {
-                ++x;
+                x += xi;
                 d -= 2 * dy;
             }
             d += 2 * dx;
         }
+    };
+
+    const int16_t dx = x1 - x0;
+    const int16_t dy = y1 - y0;
+
+    if(inline_abs(dy) < inline_abs(dx))
+    {
+        if(x0 > x1)
+            drawLineX(x1, x0, y1, y0, c);
+        else
+            drawLineX(x0, x1, y0, y1, c);
+        
     }
-    
+    else
+    {
+        if(y0 > y1)
+            drawLineY(x1, x0, y1, y0, c);
+        else
+            drawLineY(x0, x1, y0, y1, c);
+    }
 }
 
 void Canvas::drawBox(int16_t x, int16_t y, int16_t w, int16_t h, uint16_t c)
