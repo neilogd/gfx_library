@@ -1,4 +1,3 @@
-
 # Custom set of build configs:
 # - Debug:		Unoptimized debug build.
 # - Optimized: 	Optimized debug build.
@@ -19,7 +18,7 @@ IF(MSVC)
 	SET(CMAKE_SHARED_LINKER_FLAGS_RELEASE "${CMAKE_SHARED_LINKER_FLAGS_RELEASE} /DEBUG")
 ELSE()
 	SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -g")
-	SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -Wno-register")
+	SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -Wno-register -fno-exceptions -fno-rtti")
 
 	SET(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -g")
 	SET(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -g")

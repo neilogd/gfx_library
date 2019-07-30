@@ -10,8 +10,7 @@
 #include <functional>
 #include <stdint.h>
 extern uint32_t _estack;
- 
-__attribute__((section (".StackPointer")))
+__attribute__((section (".StackPointer"),used))
 const auto StackPointer = &_estack;
  
 //probably needs to be renamed and the values altered for clarity - doesn't necessarily have to be the index here

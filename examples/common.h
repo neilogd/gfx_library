@@ -1,6 +1,6 @@
 #pragma once
 
-#include <cstdint> 
+#include <stdint.h> 
 
 #if defined(PLATFORM_PC)
 #include <sys/time.h>

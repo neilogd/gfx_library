@@ -1,9 +1,9 @@
 #pragma once
 
 #include "gfxfont.h"
+#include "debug.h"
 
-#include <cstdint>
-#include <cassert>
+#include <stdint.h>
 
 enum class CommandType : uint8_t
 {
@@ -13,8 +13,9 @@ enum class CommandType : uint8_t
     DRAW_LINE,
     DRAW_BOX,
     DRAW_FILLED_BOX,
-    DRAW_TEXT,
+    DRAW_BITMAP,
     DRAW_PIXELS,
+    DRAW_TEXT,
 };
 
 struct BaseCommand
@@ -104,17 +105,23 @@ struct CommandDrawFilledBox : Command<CommandDrawFilledBox>
     uint16_t color;
 };
 
-struct CommandDrawText : Command<CommandDrawText>
+struct CommandDrawBitmap : Command<CommandDrawBitmap>
 {
-    static const CommandType TYPE = CommandType::DRAW_TEXT;
+    static const CommandType TYPE = CommandType::DRAW_BITMAP;
 
-    const GFXfont* font;
-    const char* text;
     int16_t x : 11;
     int16_t y : 11;
-    uint16_t padding : 10;
+    uint16_t w : 10;
+    uint16_t h : 10;
+    uint16_t padding : 6;
     uint16_t fg;
     uint16_t bg;
+    const uint8_t* data;
+
+    int16_t size() const
+    {
+        return sizeof(CommandDrawBitmap);
+    }
 };
 
 struct CommandDrawPixels : Command<CommandDrawPixels>
@@ -126,10 +133,23 @@ struct CommandDrawPixels : Command<CommandDrawPixels>
     uint16_t w : 10;
     uint16_t h : 10;
     uint16_t padding : 6;
-    // Pixel data after.
+    const uint16_t* data;
 
     int16_t size() const
     {
-        return sizeof(CommandDrawPixels) + (w * h * 2);
+        return sizeof(CommandDrawPixels);
     }
+};
+
+struct CommandDrawText : Command<CommandDrawText>
+{
+    static const CommandType TYPE = CommandType::DRAW_TEXT;
+
+    const GFXfont* font;
+    const char* text;
+    int16_t x : 11;
+    int16_t y : 11;
+    uint16_t padding : 10;
+    uint16_t fg;
+    uint16_t bg;
 };

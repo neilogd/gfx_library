@@ -7,12 +7,13 @@
 #define PROGMEM
 #include "fonts/Picopixel.h"
 #include "fonts/Org_01.h"
+#include "icons.h"
 
 static uint8_t cmdListBuffer[1024];
 static CommandList cmdList(cmdListBuffer, sizeof(cmdListBuffer));
 
-constexpr int16_t TILE_W = 16;
-constexpr int16_t TILE_H = 16;
+constexpr int16_t TILE_W = 64;
+constexpr int16_t TILE_H = 32;
 constexpr int16_t CANVAS_W = 128;
 constexpr int16_t CANVAS_H = 128;
 
@@ -21,8 +22,14 @@ static TileCanvas<TILE_W, TILE_H, CANVAS_W, CANVAS_H> tileCanvas;
 static bool debugShowTiles = false;
 static bool debugHashTiles = false;
 
-const char* ExampleName = "testbed";
+struct GFXbitmap
+{
+    int16_t w;
+    int16_t h;
+    const uint8_t* data;
+};
 
+const char* ExampleName = "testbed";
 
 void ExampleInit()
 {
@@ -72,7 +79,11 @@ void ExampleTick(Canvas& canvas)
     by += dy;
     if(bx >= 128 || bx <= 0) dx = -dx;
     if(by >= 128 || by <= 0) dy = -dy;
-    cmdList.drawBox(bx-1, by-1, 3, 3, Color565From888(255, 0, 0));
+
+    static uint32_t spriteIdx = 0; 
+    const uint8_t* bmpData = &icons_data[0] + ((spriteIdx >> 3) % 16) * (16*2);
+    cmdList.drawBitmap(bx-8, by-8, 16, 16, Color565From888(255, 255, 255), Color565From888(0, 0, 0), bmpData);
+    spriteIdx++;
 
     cmdList.drawLine(64, 64, 128, 64, Color565From888(255, 255, 255));
     cmdList.drawLine(64, 64, 64, 128, Color565From888(255, 255, 255));
@@ -80,10 +91,11 @@ void ExampleTick(Canvas& canvas)
     cmdList.drawLine(64, 64, 96, 128, Color565From888(255, 255, 255));
     cmdList.drawLine(128, 128, 64, 64, Color565From888(255, 255, 255));
 
-
+#if 0
     static float ticker = 0.0f;
     ticker += 0.1f;
     cmdList.drawLine(64, 64, 64 + std::cos(ticker) * 32, 64 + std::sin(ticker) * 32, Color565From888(255, 255, 255));
+#endif
 
 #if defined(PLATFORM_PC)
     static int64_t debugTileExecuteTime = 0;
@@ -129,6 +141,10 @@ void ExampleTick(Canvas& canvas)
 #endif
 
 #else
-    canvas.executeCommandList(cmdList);
+    tileCanvas.draw(canvas, debugHashTiles,
+        []()
+        {
+            tileCanvas.executeCommandList(cmdList);
+        });
 #endif
 }

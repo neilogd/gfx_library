@@ -1,6 +1,6 @@
 #pragma once
 
-#include <cstdint>
+#include <stdint.h>
 
 #if defined(PLATFORM_STM32)
 #  include "stm32f1xx_hal.h"

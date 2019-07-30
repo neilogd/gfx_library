@@ -1,21 +1,6 @@
 #include "canvas.h"
 #include "profiling.h"
 
-namespace
-{
-    inline int16_t inline_abs(int16_t a)
-    {
-        return a < 0 ? -a : a;
-    }
-
-    inline void inline_swap(int16_t& a, int16_t& b)
-    {
-        int16_t temp = a;
-        b = a;
-        a = temp;
-    }
-}
-
 Canvas::Canvas(int w, int h)
     : w_(w)
     , h_(h)
@@ -74,18 +59,25 @@ void Canvas::executeCommandList(const CommandList& cmdList)
                 it += cmd.size();
             }
             break;
-        case CommandType::DRAW_TEXT:
+        case CommandType::DRAW_BITMAP:
             {
-                const auto& cmd = it->as<CommandDrawText>();
-                setFont(cmd.font);
-                drawText(cmd.x, cmd.y, cmd.text, cmd.fg, cmd.bg);
+                const auto& cmd = it->as<CommandDrawBitmap>();
+                drawBitmap(cmd.x, cmd.y, cmd.w, cmd.h, cmd.fg, cmd.bg, cmd.data);
                 it += cmd.size();
             }
             break;
         case CommandType::DRAW_PIXELS:
             {
                 const auto& cmd = it->as<CommandDrawPixels>();
-                writePixels(cmd.x, cmd.y, cmd.w, cmd.h, reinterpret_cast<const uint16_t*>(&cmd + 1));
+                drawPixels(cmd.x, cmd.y, cmd.w, cmd.h, cmd.data);
+                it += cmd.size();
+            }
+            break;
+        case CommandType::DRAW_TEXT:
+            {
+                const auto& cmd = it->as<CommandDrawText>();
+                setFont(cmd.font);
+                drawText(cmd.x, cmd.y, cmd.text, cmd.fg, cmd.bg);
                 it += cmd.size();
             }
             break;
@@ -203,7 +195,14 @@ void Canvas::drawText(int16_t x, int16_t y, const char* text, uint16_t fg, uint1
         else if(c >= font_->first && c <= font_->last)
         {
             const GFXglyph* glyph = &font_->glyph[c - font_->first];
-            drawGlyph(x, y, glyph, fg, bg);
+
+            drawBitmap(x + glyph->xOffset, 
+                y + glyph->yOffset + font_->yAdvance, 
+                glyph->width, 
+                glyph->height, 
+                fg, bg, 
+                &font_->bitmap[glyph->bitmapOffset]);
+
             x += glyph->xAdvance;
         }
     }
@@ -214,20 +213,17 @@ void Canvas::drawPixels(int16_t x, int16_t y, int16_t w, int16_t h, const uint16
     writePixels(x, y, w, h, pixelData);
 }
 
-void Canvas::drawGlyph(int16_t x, int16_t y, const GFXglyph* glyph, uint16_t fg, uint16_t bg)
+void Canvas::drawBitmap(int16_t x, int16_t y, int16_t w, int16_t h, uint16_t fg, uint16_t bg, const uint8_t* bitmapData)
 {
-    const uint16_t glyphPixels = glyph->width * glyph->height;
+    const uint16_t numPixels = w * h;
+    const int16_t maxx = x + w;
+    const int16_t maxy = y + h;
 
-    x += glyph->xOffset;
-    y += glyph->yOffset + font_->yAdvance;
-    const int16_t maxx = x + glyph->width;
-    const int16_t maxy = y + glyph->height;
-    const uint8_t* bitmap = &font_->bitmap[glyph->bitmapOffset];
     uint8_t mask = 0;
     uint8_t byte = 0;
 
     // Can we use the fast path? 
-    if(fg != bg && glyphPixels <= PIXEL_BATCH_SIZE)
+    if(fg != bg && numPixels <= PIXEL_BATCH_SIZE)
     {
         uint16_t pixelIndex = 0;
         for(int16_t j = y; j < maxy; j++)
@@ -237,14 +233,14 @@ void Canvas::drawGlyph(int16_t x, int16_t y, const GFXglyph* glyph, uint16_t fg,
                 if((mask>>=1) == 0x0)
                 {
                     mask = 0b10000000;
-                    byte = *bitmap++;
+                    byte = *bitmapData++;
                 }
 
                 pixelBatch_[pixelIndex++] = ((byte & mask) != 0) ? fg : bg;
             }
         }
 
-        writePixels(x, y, glyph->width, glyph->height, pixelBatch_);
+        writePixels(x, y, w, h, pixelBatch_);
     }
     else
     {
@@ -255,7 +251,7 @@ void Canvas::drawGlyph(int16_t x, int16_t y, const GFXglyph* glyph, uint16_t fg,
                 if((mask>>=1) == 0x0)
                 {
                     mask = 0b10000000;
-                    byte = *bitmap++;
+                    byte = *bitmapData++;
                 }
 
                 if((byte & mask) != 0)
