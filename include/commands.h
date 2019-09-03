@@ -7,6 +7,14 @@
 
 #define PACKED __attribute__((packed))
 
+// Max addressable width & height.
+constexpr const int MAX_W_BITS = 10;
+constexpr const int MAX_H_BITS = 10;
+
+// X & Y require a signed bit.
+constexpr const int MAX_X_BITS = MAX_W_BITS + 1;
+constexpr const int MAX_Y_BITS = MAX_H_BITS + 1;
+
 enum class CommandType : uint8_t
 {
     NONE,
@@ -63,62 +71,58 @@ struct PACKED CommandDrawHLine : Command<CommandDrawHLine>
 {
     static const CommandType TYPE = CommandType::DRAW_H_LINE;
 
-    int16_t x : 11;
-    int16_t y : 11;
-    uint16_t w : 10;
+    int16_t x : MAX_X_BITS;
+    int16_t y : MAX_Y_BITS;
+    uint16_t w : MAX_W_BITS;
 };
 
 struct PACKED CommandDrawVLine : Command<CommandDrawVLine>
 {
     static const CommandType TYPE = CommandType::DRAW_V_LINE;
 
-    int16_t x : 11;
-    int16_t y : 11;
-    uint16_t h : 10;
+    int16_t x : MAX_X_BITS;
+    int16_t y : MAX_Y_BITS;
+    uint16_t h : MAX_H_BITS;
 };
 
 struct PACKED CommandDrawLine : Command<CommandDrawLine>
 {
     static const CommandType TYPE = CommandType::DRAW_LINE;
 
-    int16_t x0 : 11;
-    int16_t y0 : 11;
-    int16_t x1 : 11;
-    int16_t y1 : 11;
-    uint16_t padding : 4;
+    int16_t x0 : MAX_X_BITS;
+    int16_t y0 : MAX_Y_BITS;
+    int16_t x1 : MAX_X_BITS;
+    int16_t y1 : MAX_Y_BITS;
 };
 
 struct PACKED CommandDrawBox : Command<CommandDrawBox>
 {
     static const CommandType TYPE = CommandType::DRAW_BOX;
 
-    int16_t x : 11;
-    int16_t y : 11;
-    uint16_t w : 10;
-    uint16_t h : 10;
-    uint16_t padding : 6;
+    int16_t x : MAX_X_BITS;
+    int16_t y : MAX_Y_BITS;
+    uint16_t w : MAX_W_BITS;
+    uint16_t h : MAX_H_BITS;
 };
 
 struct PACKED CommandDrawFilledBox : Command<CommandDrawFilledBox>
 {
     static const CommandType TYPE = CommandType::DRAW_FILLED_BOX;
 
-    int16_t x : 11;
-    int16_t y : 11;
-    uint16_t w : 10;
-    uint16_t h : 10;
-    uint16_t padding : 6;
+    int16_t x : MAX_X_BITS;
+    int16_t y : MAX_Y_BITS;
+    uint16_t w : MAX_W_BITS;
+    uint16_t h : MAX_H_BITS;
 };
 
 struct PACKED CommandDrawBitmap : Command<CommandDrawBitmap>
 {
     static const CommandType TYPE = CommandType::DRAW_BITMAP;
 
-    int16_t x : 11;
-    int16_t y : 11;
-    uint16_t w : 10;
-    uint16_t h : 10;
-    uint16_t padding : 6;
+    int16_t x : MAX_X_BITS;
+    int16_t y : MAX_Y_BITS;
+    uint16_t w : MAX_W_BITS;
+    uint16_t h : MAX_H_BITS;
     const uint8_t* data;
 
     int16_t size() const
@@ -131,11 +135,10 @@ struct PACKED CommandDrawPixels : Command<CommandDrawPixels>
 {
     static const CommandType TYPE = CommandType::DRAW_PIXELS;
 
-    int16_t x : 11;
-    int16_t y : 11;
-    uint16_t w : 10;
-    uint16_t h : 10;
-    uint16_t padding : 6;
+    int16_t x : MAX_X_BITS;
+    int16_t y : MAX_Y_BITS;
+    uint16_t w : MAX_W_BITS;
+    uint16_t h : MAX_H_BITS;
     const uint16_t* data;
 
     int16_t size() const
@@ -148,8 +151,8 @@ struct PACKED CommandDrawText : Command<CommandDrawText>
 {
     static const CommandType TYPE = CommandType::DRAW_TEXT;
 
-    int16_t x : 11;
-    int16_t y : 11;
+    int16_t x : MAX_X_BITS;
+    int16_t y : MAX_Y_BITS;
     uint16_t length : 10;
 
     int16_t size() const
