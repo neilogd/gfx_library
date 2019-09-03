@@ -58,16 +58,25 @@ void ExampleTick(Canvas& canvas)
 {
     cmdList.clear();
 
-    cmdList.drawFilledBox(0, 0, 128, 128, Color565From888(0, 0, 64));
+    cmdList.setColors(Color565From888(0, 0, 64), 0x0000);
+    cmdList.drawFilledBox(0, 0, 128, 128);
 
     const char* testString = "ABCDEFGHIJK\nLMNOPQRSTUV\nWXYZ\n1234567890\n!@#$%^&*()\n[]<>;:'-+=\n\n";
     int16_t texty = 0;
-    cmdList.drawText(8, texty, testString, &Org_01, 0xffff, 0x0000);
+    cmdList.setColors(0xffff, 0x0000);
+    cmdList.setFont(&Org_01);
+    cmdList.drawText(8, texty, testString);
     texty += 48;
 
-    cmdList.drawFilledBox(0, texty, 64, texty + 16, Color565From888(255, 0, 255));
-    cmdList.drawBox(0, texty, 64, texty + 16, Color565From888(255, 255, 255));
-    cmdList.drawText(8, texty, testString, &Picopixel, 0xffff, 0xffff);
+    cmdList.setColors(Color565From888(255, 0, 255), 0);
+    cmdList.drawFilledBox(0, texty, 64, texty + 16);
+
+    cmdList.setColors(Color565From888(255, 255, 255), 0);
+    cmdList.drawBox(0, texty, 64, texty + 16);
+
+    cmdList.setColors(0xffff, 0xffff);
+    cmdList.setFont(&Picopixel);
+    cmdList.drawText(8, texty, testString);
     texty += 48;
 
     static int16_t bx = 92;
@@ -82,14 +91,15 @@ void ExampleTick(Canvas& canvas)
 
     static uint32_t spriteIdx = 0; 
     const uint8_t* bmpData = &icons_data[0] + ((spriteIdx >> 3) % 16) * (16*2);
-    cmdList.drawBitmap(bx-8, by-8, 16, 16, Color565From888(255, 255, 255), Color565From888(0, 0, 0), bmpData);
+    cmdList.setColors(Color565From888(255, 255, 255), Color565From888(0, 0, 0));
+    cmdList.drawBitmap(bx-8, by-8, 16, 16, bmpData);
     spriteIdx++;
 
-    cmdList.drawLine(64, 64, 128, 64, Color565From888(255, 255, 255));
-    cmdList.drawLine(64, 64, 64, 128, Color565From888(255, 255, 255));
-    cmdList.drawLine(64, 64, 128, 96, Color565From888(255, 255, 255));
-    cmdList.drawLine(64, 64, 96, 128, Color565From888(255, 255, 255));
-    cmdList.drawLine(128, 128, 64, 64, Color565From888(255, 255, 255));
+    cmdList.drawLine(64, 64, 128, 64);
+    cmdList.drawLine(64, 64, 64, 128);
+    cmdList.drawLine(64, 64, 128, 96);
+    cmdList.drawLine(64, 64, 96, 128);
+    cmdList.drawLine(128, 128, 64, 64);
 
 #if 0
     static float ticker = 0.0f;

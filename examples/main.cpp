@@ -11,12 +11,6 @@ extern void ExampleInit();
 extern void ExampleInput(uint16_t id, uint16_t val);
 extern void ExampleTick(Canvas& canvas);
 
-#ifdef USE_FULL_ASSERT
-extern "C" void assert_failed(uint8_t* file, uint32_t line)
-{
-    while(true);
-}
-#endif
 
 #if defined(PLATFORM_PC)
 #include <SDL2/SDL.h>
@@ -155,15 +149,17 @@ struct IRQHandler<VectorTableEntry::Dma1Channel5>
 
 #include "display_st7735.h"
 
+SPI_HandleTypeDef s_hspi2;
+
 class Dummy_Canvas final : public Canvas
 {
 public:
     DisplayST7735 display;
 
-    Dummy_Canvas()
+    Dummy_Canvas(const DisplayConfig& config)
         : Canvas(128,128)
     {
-        display.init();
+        display.init(config);
     }
 
     ~Dummy_Canvas()
@@ -222,11 +218,66 @@ void SystemClock_Config(void)
     HAL_NVIC_SetPriority(SysTick_IRQn, 0, 0);
 }
 
+static GPIO_TypeDef* LCD_GPIO = GPIOC;
+static GPIO_TypeDef* SPI2_GPIO = GPIOB;
+
+static const uint16_t LCD_CS = GPIO_PIN_13;
+static const uint16_t LCD_RST = GPIO_PIN_14;
+static const uint16_t LCD_DC = GPIO_PIN_15;
+
+static const uint16_t SPI2_MOSI = GPIO_PIN_15;
+static const uint16_t SPI2_MISO = GPIO_PIN_14;
+static const uint16_t SPI2_SCLK = GPIO_PIN_13;
+static const uint16_t SPI2_NSS = GPIO_PIN_12;
+
 void GPIO_Config()
 {
     __HAL_RCC_GPIOA_CLK_ENABLE();
     __HAL_RCC_GPIOB_CLK_ENABLE();
     __HAL_RCC_GPIOC_CLK_ENABLE();
+    // GPIO:
+    GPIO_InitTypeDef GPIO_InitStruct;
+    GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+    GPIO_InitStruct.Pull = GPIO_PULLDOWN;
+    GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_HIGH;
+
+    GPIO_InitStruct.Pin = LCD_CS | LCD_RST | LCD_DC;
+    HAL_GPIO_Init(LCD_GPIO, &GPIO_InitStruct);
+
+    // Init alternate function on SPI2 pins.
+    GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
+    GPIO_InitStruct.Pull = GPIO_NOPULL;
+    GPIO_InitStruct.Pin = SPI2_MOSI | SPI2_SCLK | SPI2_NSS;
+    HAL_GPIO_Init(SPI2_GPIO, &GPIO_InitStruct);
+
+    GPIO_InitStruct.Mode = GPIO_MODE_AF_INPUT;
+    GPIO_InitStruct.Pin = SPI2_MISO;
+    HAL_GPIO_Init(SPI2_GPIO, &GPIO_InitStruct);
+}
+
+void SPI_Config()
+{
+    __HAL_RCC_SPI2_CLK_ENABLE();
+
+    // SPI2 init.
+    SPI_InitTypeDef SPIInitDef = {};
+    SPIInitDef.Mode = SPI_MODE_MASTER;
+    SPIInitDef.Direction = SPI_DIRECTION_1LINE;
+    SPIInitDef.DataSize = SPI_DATASIZE_8BIT;
+    SPIInitDef.CLKPolarity = SPI_POLARITY_LOW;
+    SPIInitDef.CLKPhase = SPI_PHASE_1EDGE;
+    SPIInitDef.NSS = SPI_NSS_SOFT;
+    SPIInitDef.BaudRatePrescaler = SPI_BAUDRATEPRESCALER_2;
+    SPIInitDef.FirstBit = SPI_FIRSTBIT_MSB;
+    SPIInitDef.TIMode = SPI_TIMODE_DISABLE;
+    SPIInitDef.CRCCalculation = SPI_CRCCALCULATION_DISABLE;
+    SPIInitDef.CRCPolynomial = 0;
+
+    s_hspi2 = {};
+    s_hspi2.Instance = SPI2;
+    s_hspi2.Init = SPIInitDef;
+
+    HAL_SPI_Init(&s_hspi2);
 }
 
 int main()
@@ -234,10 +285,18 @@ int main()
     HAL_Init();
     SystemClock_Config();
     GPIO_Config();
+    SPI_Config();
 
     ExampleInit();
 
-    Dummy_Canvas canvas;
+    DisplayConfig config = 
+    {
+        0, 0, // row/col start
+        &s_hspi2, // hspi
+        nullptr, // hdma
+    };
+
+    Dummy_Canvas canvas(config);
 
     uint32_t tick = 0;
     uint32_t timer = 0;
@@ -250,13 +309,49 @@ int main()
 
         canvas.display.begin();
         ExampleTick(canvas);
-        canvas.drawText(96, 0, frameTime, 0xffff, 0x0000);
+        canvas.setColors(0xffff, 0x0000);
+        canvas.setFont(&Picopixel);
+        canvas.drawText(96, 0, frameTime);
         canvas.display.end();
         timer = (DWT->CYCCNT - tick) / (SystemCoreClock / 1000000);
-        sprintf(frameTime, "%u us", timer);
+        //sprintf(frameTime, "%u us", timer);
     }
 
     return 0;
 }
+
+#ifdef USE_FULL_ASSERT
+extern "C" void assert_failed(uint8_t* file, uint32_t line)
+{
+    char error[64]; 
+    const char* lastSeparator = (const char*)file;
+    while(*file != '\0')
+    {
+        if(*file == '\\' || *file == '/')
+            lastSeparator = (const char*)file + 1;
+        file++;
+    }
+
+    sprintf(error, "Assertion Failed:\n  %s:%i", lastSeparator, line);
+
+    DisplayConfig config = 
+    {
+        0, 0, // row/col start
+        &s_hspi2, // hspi
+        nullptr, // hdma
+    };
+
+    Dummy_Canvas canvas(config);
+    canvas.display.begin();
+    canvas.setColors(COLOR_RED, COLOR_BLACK);
+    canvas.drawFilledBox(0, 0, 128, 128);
+    canvas.setColors(COLOR_WHITE, COLOR_RED);
+    canvas.setFont(&Picopixel);
+    canvas.drawText(0, 0, error);
+    canvas.display.end();
+    while(true);
+}
+#endif
+
 #endif
 

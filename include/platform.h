@@ -3,7 +3,9 @@
 #include <stdint.h>
 
 #if defined(PLATFORM_STM32)
+#  include "stm32f1xx.h"
 #  include "stm32f1xx_hal.h"
+
 
 //#  define USE_CRC_PERIPHERAL
 

@@ -27,42 +27,42 @@ void Canvas::executeCommandList(const CommandList& cmdList)
         case CommandType::DRAW_H_LINE:
             {
                 const auto& cmd = it->as<CommandDrawHLine>();
-                drawHLine(cmd.x, cmd.y, cmd.w, cmd.color);
+                drawHLine(cmd.x, cmd.y, cmd.w);
                 it += cmd.size();
             }
             break;
         case CommandType::DRAW_V_LINE:
             {
                 const auto& cmd = it->as<CommandDrawVLine>();
-                drawVLine(cmd.x, cmd.y, cmd.h, cmd.color);
+                drawVLine(cmd.x, cmd.y, cmd.h);
                 it += cmd.size();
             }
             break;
         case CommandType::DRAW_LINE:
             {
                 const auto& cmd = it->as<CommandDrawLine>();
-                drawLine(cmd.x0, cmd.y0, cmd.x1, cmd.y1, cmd.color);
+                drawLine(cmd.x0, cmd.y0, cmd.x1, cmd.y1);
                 it += cmd.size();
             }
             break;
         case CommandType::DRAW_BOX:
             {
                 const auto& cmd = it->as<CommandDrawBox>();
-                drawBox(cmd.x, cmd.y, cmd.w, cmd.h, cmd.color);
+                drawBox(cmd.x, cmd.y, cmd.w, cmd.h);
                 it += cmd.size();
             }
             break;
         case CommandType::DRAW_FILLED_BOX:
             {
                 const auto& cmd = it->as<CommandDrawFilledBox>();
-                drawFilledBox(cmd.x, cmd.y, cmd.w, cmd.h, cmd.color);
+                drawFilledBox(cmd.x, cmd.y, cmd.w, cmd.h);
                 it += cmd.size();
             }
             break;
         case CommandType::DRAW_BITMAP:
             {
                 const auto& cmd = it->as<CommandDrawBitmap>();
-                drawBitmap(cmd.x, cmd.y, cmd.w, cmd.h, cmd.fg, cmd.bg, cmd.data);
+                drawBitmap(cmd.x, cmd.y, cmd.w, cmd.h, cmd.data);
                 it += cmd.size();
             }
             break;
@@ -76,8 +76,21 @@ void Canvas::executeCommandList(const CommandList& cmdList)
         case CommandType::DRAW_TEXT:
             {
                 const auto& cmd = it->as<CommandDrawText>();
+                drawText(cmd.x, cmd.y, reinterpret_cast<const char*>((&cmd) + 1));
+                it += cmd.size();
+            }
+            break;
+        case CommandType::SET_COLORS:
+            {
+                const auto& cmd = it->as<CommandSetColors>();
+                setColors(cmd.fg, cmd.bg);
+                it += cmd.size();
+            }
+            break;
+        case CommandType::SET_FONT:
+            {
+                const auto& cmd = it->as<CommandSetFont>();
                 setFont(cmd.font);
-                drawText(cmd.x, cmd.y, cmd.text, cmd.fg, cmd.bg);
                 it += cmd.size();
             }
             break;
@@ -87,19 +100,19 @@ void Canvas::executeCommandList(const CommandList& cmdList)
     ProfilingTimestamp("executeCommandList END");
 }
 
-void Canvas::drawHLine(int16_t x, int16_t y, int16_t w, uint16_t c)
+void Canvas::drawHLine(int16_t x, int16_t y, int16_t w)
 {
-    writePixels(x, y, w, 1, c);
+    writePixels(x, y, w, 1, fg_);
 }
 
-void Canvas::drawVLine(int16_t x, int16_t y, int16_t h, uint16_t c)
+void Canvas::drawVLine(int16_t x, int16_t y, int16_t h)
 {
-    writePixels(x, y, 1, h, c);
+    writePixels(x, y, 1, h, fg_);
 }
 
-void Canvas::drawLine(int16_t x0, int16_t y0, int16_t x1, int16_t y1, uint16_t c)
+void Canvas::drawLine(int16_t x0, int16_t y0, int16_t x1, int16_t y1)
 {
-    auto drawLineX = [this](int16_t x0, int16_t x1, int16_t y0, int16_t y1, uint16_t c)
+    auto drawLineX = [this](int16_t x0, int16_t x1, int16_t y0, int16_t y1)
     {
         int16_t dx = x1 - x0;
         int16_t dy = y1 - y0;
@@ -112,9 +125,9 @@ void Canvas::drawLine(int16_t x0, int16_t y0, int16_t x1, int16_t y1, uint16_t c
         }
         int16_t d = 2 * dy - dx;
         int16_t y = y0;
-        for(int16_t x = x0; x < x1; ++x)
+        for(int16_t x = x0; x <= x1; ++x)
         {
-            writePixels(x, y, 1, 1, c);
+            writePixels(x, y, 1, 1, fg_);
             if(d > 0)
             {
                 y += yi;
@@ -124,7 +137,7 @@ void Canvas::drawLine(int16_t x0, int16_t y0, int16_t x1, int16_t y1, uint16_t c
         }
     };
 
-    auto drawLineY = [this](int16_t x0, int16_t x1, int16_t y0, int16_t y1, uint16_t c)
+    auto drawLineY = [this](int16_t x0, int16_t x1, int16_t y0, int16_t y1)
     {
         int16_t dx = x1 - x0;
         int16_t dy = y1 - y0;
@@ -136,9 +149,9 @@ void Canvas::drawLine(int16_t x0, int16_t y0, int16_t x1, int16_t y1, uint16_t c
         }
         int16_t d = 2 * dx - dy;
         int16_t x = x0;
-        for(int16_t y = y0; y < y1; ++y)
+        for(int16_t y = y0; y <= y1; ++y)
         {
-            writePixels(x, y, 1, 1, c);
+            writePixels(x, y, 1, 1, fg_);
             if(d > 0)
             {
                 x += xi;
@@ -154,34 +167,34 @@ void Canvas::drawLine(int16_t x0, int16_t y0, int16_t x1, int16_t y1, uint16_t c
     if(inline_abs(dy) < inline_abs(dx))
     {
         if(x0 > x1)
-            drawLineX(x1, x0, y1, y0, c);
+            drawLineX(x1, x0, y1, y0);
         else
-            drawLineX(x0, x1, y0, y1, c);
+            drawLineX(x0, x1, y0, y1);
         
     }
     else
     {
         if(y0 > y1)
-            drawLineY(x1, x0, y1, y0, c);
+            drawLineY(x1, x0, y1, y0);
         else
-            drawLineY(x0, x1, y0, y1, c);
+            drawLineY(x0, x1, y0, y1);
     }
 }
 
-void Canvas::drawBox(int16_t x, int16_t y, int16_t w, int16_t h, uint16_t c)
+void Canvas::drawBox(int16_t x, int16_t y, int16_t w, int16_t h)
 {
-    drawHLine(x, y, w, c);
-    drawHLine(x, y + h - 1, w, c);
-    drawVLine(x, y, h, c);
-    drawVLine(x + w - 1, y, h, c);
+    drawHLine(x, y, w);
+    drawHLine(x, y + h - 1, w);
+    drawVLine(x, y, h);
+    drawVLine(x + w - 1, y, h);
 }
 
-void Canvas::drawFilledBox(int16_t x, int16_t y, int16_t w, int16_t h, uint16_t c)
+void Canvas::drawFilledBox(int16_t x, int16_t y, int16_t w, int16_t h)
 {
-    writePixels(x, y, w, h, c);
+    writePixels(x, y, w, h, fg_);
 }
 
-void Canvas::drawText(int16_t x, int16_t y, const char* text, uint16_t fg, uint16_t bg)
+void Canvas::drawText(int16_t x, int16_t y, const char* text)
 {
     uint8_t c;
     int16_t ox = x;
@@ -192,17 +205,13 @@ void Canvas::drawText(int16_t x, int16_t y, const char* text, uint16_t fg, uint1
             x = ox;
             y += font_->yAdvance;
         }
-        else if(c >= font_->first && c <= font_->last)
+        else if(const GFXglyph* glyph = font_->getGlyph(c))
         {
-            const GFXglyph* glyph = &font_->glyph[c - font_->first];
-
             drawBitmap(x + glyph->xOffset, 
                 y + glyph->yOffset + font_->yAdvance, 
                 glyph->width, 
-                glyph->height, 
-                fg, bg, 
+                glyph->height,
                 &font_->bitmap[glyph->bitmapOffset]);
-
             x += glyph->xAdvance;
         }
     }
@@ -213,7 +222,7 @@ void Canvas::drawPixels(int16_t x, int16_t y, int16_t w, int16_t h, const uint16
     writePixels(x, y, w, h, pixelData);
 }
 
-void Canvas::drawBitmap(int16_t x, int16_t y, int16_t w, int16_t h, uint16_t fg, uint16_t bg, const uint8_t* bitmapData)
+void Canvas::drawBitmap(int16_t x, int16_t y, int16_t w, int16_t h, const uint8_t* bitmapData)
 {
     const uint16_t numPixels = w * h;
     const int16_t maxx = x + w;
@@ -223,7 +232,7 @@ void Canvas::drawBitmap(int16_t x, int16_t y, int16_t w, int16_t h, uint16_t fg,
     uint8_t byte = 0;
 
     // Can we use the fast path? 
-    if(fg != bg && numPixels <= PIXEL_BATCH_SIZE)
+    if(fg_ != bg_ && numPixels <= PIXEL_BATCH_SIZE)
     {
         uint16_t pixelIndex = 0;
         for(int16_t j = y; j < maxy; j++)
@@ -236,7 +245,7 @@ void Canvas::drawBitmap(int16_t x, int16_t y, int16_t w, int16_t h, uint16_t fg,
                     byte = *bitmapData++;
                 }
 
-                pixelBatch_[pixelIndex++] = ((byte & mask) != 0) ? fg : bg;
+                pixelBatch_[pixelIndex++] = ((byte & mask) != 0) ? fg_ : bg_;
             }
         }
 
@@ -256,11 +265,11 @@ void Canvas::drawBitmap(int16_t x, int16_t y, int16_t w, int16_t h, uint16_t fg,
 
                 if((byte & mask) != 0)
                 {
-                    writePixels(i, j, 1, 1, &fg);
+                    writePixels(i, j, 1, 1, &fg_);
                 }
-                else if(fg != bg)
+                else if(fg_ != bg_)
                 {
-                    writePixels(i, j, 1, 1, &bg);
+                    writePixels(i, j, 1, 1, &bg_);
                 }                
             }
         }

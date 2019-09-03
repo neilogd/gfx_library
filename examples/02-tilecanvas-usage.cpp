@@ -32,10 +32,17 @@ void ExampleTick(Canvas& canvas)
     cmdList.clear();
 
     // Draw some filled boxes.
-    cmdList.drawFilledBox(0, 0, 128, 128, Color565From888(0, 0, 0));
-    cmdList.drawFilledBox(0, 0, 64, 64, Color565From888(255, 0, 0));
-    cmdList.drawFilledBox(64, 0, 64, 64, Color565From888(0, 255, 0));
-    cmdList.drawFilledBox(0, 64, 64, 64, Color565From888(255, 0, 255));
+    cmdList.setColors(Color565From888(0, 0, 0), Color565From888(0, 0, 0));
+    cmdList.drawFilledBox(0, 0, 128, 128);
+
+    cmdList.setColors(Color565From888(255, 0, 0), Color565From888(0, 0, 0));
+    cmdList.drawFilledBox(0, 0, 64, 64);
+
+    cmdList.setColors(Color565From888(0, 255, 0), Color565From888(0, 0, 0));
+    cmdList.drawFilledBox(64, 0, 64, 64);
+
+    cmdList.setColors(Color565From888(255, 0, 255), Color565From888(0, 0, 0));
+    cmdList.drawFilledBox(0, 64, 64, 64);
 
     // Use tile canvas to execute command list.
     // Lambda is called for each tile invocation.

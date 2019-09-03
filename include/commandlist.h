@@ -8,15 +8,21 @@ class CommandList
 public:
     CommandList(uint8_t* buffer, uint32_t bufferSize);
 
-    void drawHLine(int16_t x, int16_t y, int16_t w, uint16_t c);
-    void drawVLine(int16_t x, int16_t y, int16_t h, uint16_t c);
-    void drawLine(int16_t x0, int16_t y0, int16_t x1, int16_t y1, uint16_t c);
-    void drawBox(int16_t x, int16_t y, int16_t w, int16_t h, uint16_t c);
-    void drawFilledBox(int16_t x, int16_t y, int16_t w, int16_t h, uint16_t c);
-    void drawBitmap(int16_t x, int16_t y, int16_t w, int16_t h, uint16_t fg, uint16_t bg, const uint8_t* bitmapData);
+    void drawHLine(int16_t x, int16_t y, int16_t w);
+    void drawVLine(int16_t x, int16_t y, int16_t h);
+    void drawLine(int16_t x0, int16_t y0, int16_t x1, int16_t y1);
+    void drawBox(int16_t x, int16_t y, int16_t w, int16_t h);
+    void drawFilledBox(int16_t x, int16_t y, int16_t w, int16_t h);
+    void drawBitmap(int16_t x, int16_t y, int16_t w, int16_t h, const uint8_t* bitmapData);
     void drawPixels(int16_t x, int16_t y, int16_t w, int16_t h, const uint16_t* pixelData);
-    void drawText(int16_t x, int16_t y, const char* text, const GFXfont* font, uint16_t fg, uint16_t bg);
- 
+    void drawText(int16_t x, int16_t y, const char* text);
+
+    void setColors(uint16_t fg, uint16_t bg);
+    void setFont(const GFXfont* font);
+    void setCursor(int16_t x, int16_t y);
+
+    const GFXfont* getFont() const { return font_; }
+
     const BaseCommand* begin() const { return reinterpret_cast<BaseCommand*>(bufferBegin_); }
     const BaseCommand* end() const { return reinterpret_cast<BaseCommand*>(bufferCurr_); }
     void clear() { bufferCurr_ = bufferBegin_; }
@@ -57,4 +63,10 @@ private:
     uint8_t* bufferBegin_;
     uint8_t* bufferEnd_;
     uint8_t* bufferCurr_;
+    int16_t cursorX_;
+    int16_t cursorY_;
+
+    uint16_t fg_;
+    uint16_t bg_;
+    const GFXfont* font_;
 };
