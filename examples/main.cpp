@@ -119,7 +119,7 @@ int main()
 
     return 0;
 }
-#else
+#elif defined(PLATFORM_STM32)
 
 #include "stm32f1xx_hal.h"
 #include "isr.h"
@@ -314,6 +314,204 @@ int main()
         canvas.drawText(96, 0, frameTime);
         canvas.display.end();
         timer = (DWT->CYCCNT - tick) / (SystemCoreClock / 1000000);
+        //sprintf(frameTime, "%u us", timer);
+    }
+
+    return 0;
+}
+
+#ifdef USE_FULL_ASSERT
+extern "C" void assert_failed(uint8_t* file, uint32_t line)
+{
+    char error[64]; 
+    const char* lastSeparator = (const char*)file;
+    while(*file != '\0')
+    {
+        if(*file == '\\' || *file == '/')
+            lastSeparator = (const char*)file + 1;
+        file++;
+    }
+
+    sprintf(error, "Assertion Failed:\n  %s:%i", lastSeparator, line);
+
+    DisplayConfig config = 
+    {
+        0, 0, // row/col start
+        &s_hspi2, // hspi
+        nullptr, // hdma
+    };
+
+    Dummy_Canvas canvas(config);
+    canvas.display.begin();
+    canvas.setColors(COLOR_RED, COLOR_BLACK);
+    canvas.drawFilledBox(0, 0, 128, 128);
+    canvas.setColors(COLOR_WHITE, COLOR_RED);
+    canvas.setFont(&Picopixel);
+    canvas.drawText(0, 0, error);
+    canvas.display.end();
+    while(true);
+}
+#endif
+
+#elif defined(PLATFORM_RPI_RP2)
+
+#include "pico/stdlib.h"
+
+#if 0
+template<>
+struct IRQHandler<VectorTableEntry::Systick>
+{
+    static constexpr auto LambdaHandler = [](){ 
+        HAL_IncTick();
+        HAL_SYSTICK_IRQHandler();
+    };
+    using constant_t = std::integral_constant<void(*)(), +LambdaHandler>;
+};
+
+
+template<>
+struct IRQHandler<VectorTableEntry::Dma1Channel5>
+{
+    static constexpr auto LambdaHandler = [](){ 
+        while(true);
+    };
+    using constant_t = std::integral_constant<void(*)(), +LambdaHandler>;
+};
+
+#include "vectors.h"
+#endif
+
+#include "display_st7735.h"
+
+class Dummy_Canvas final : public Canvas
+{
+public:
+    DisplayST7735 display;
+
+    Dummy_Canvas(const DisplayConfig& config)
+        : Canvas(128,128)
+    {
+        display.init(config);
+    }
+
+    ~Dummy_Canvas()
+    {
+    }
+
+    void writePixels(int16_t x, int16_t y, int16_t w, int16_t h, const uint16_t* data) override
+    {
+        ProfilingTimestamp("writePixels BEGIN");
+        display.setAddrWindow(x, y, w, h);
+        display.writePixels(data, w * h);
+        ProfilingTimestamp("writePixels END");
+    }
+
+    void writePixels(int16_t x, int16_t y, int16_t w, int16_t h, uint16_t c) override
+    {
+        display.setAddrWindow(x, y, w, h);
+        for(int j = 0; j < h; ++j)
+        {
+            for(int i = 0; i < w; ++i)
+            {
+                display.writePixels(&c, 1);
+            }
+        }
+    }
+};
+
+#if 0
+static const uint16_t LCD_CS = GPIO_PIN_13;
+static const uint16_t LCD_RST = GPIO_PIN_14;
+static const uint16_t LCD_DC = GPIO_PIN_15;
+
+static const uint16_t SPI2_MOSI = GPIO_PIN_15;
+static const uint16_t SPI2_MISO = GPIO_PIN_14;
+static const uint16_t SPI2_SCLK = GPIO_PIN_13;
+static const uint16_t SPI2_NSS = GPIO_PIN_12;
+
+void GPIO_Config()
+{
+    __HAL_RCC_GPIOA_CLK_ENABLE();
+    __HAL_RCC_GPIOB_CLK_ENABLE();
+    __HAL_RCC_GPIOC_CLK_ENABLE();
+    // GPIO:
+    GPIO_InitTypeDef GPIO_InitStruct;
+    GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+    GPIO_InitStruct.Pull = GPIO_PULLDOWN;
+    GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_HIGH;
+
+    GPIO_InitStruct.Pin = LCD_CS | LCD_RST | LCD_DC;
+    HAL_GPIO_Init(LCD_GPIO, &GPIO_InitStruct);
+
+    // Init alternate function on SPI2 pins.
+    GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
+    GPIO_InitStruct.Pull = GPIO_NOPULL;
+    GPIO_InitStruct.Pin = SPI2_MOSI | SPI2_SCLK | SPI2_NSS;
+    HAL_GPIO_Init(SPI2_GPIO, &GPIO_InitStruct);
+
+    GPIO_InitStruct.Mode = GPIO_MODE_AF_INPUT;
+    GPIO_InitStruct.Pin = SPI2_MISO;
+    HAL_GPIO_Init(SPI2_GPIO, &GPIO_InitStruct);
+}
+
+void SPI_Config()
+{
+    __HAL_RCC_SPI2_CLK_ENABLE();
+
+    // SPI2 init.
+    SPI_InitTypeDef SPIInitDef = {};
+    SPIInitDef.Mode = SPI_MODE_MASTER;
+    SPIInitDef.Direction = SPI_DIRECTION_1LINE;
+    SPIInitDef.DataSize = SPI_DATASIZE_8BIT;
+    SPIInitDef.CLKPolarity = SPI_POLARITY_LOW;
+    SPIInitDef.CLKPhase = SPI_PHASE_1EDGE;
+    SPIInitDef.NSS = SPI_NSS_SOFT;
+    SPIInitDef.BaudRatePrescaler = SPI_BAUDRATEPRESCALER_2;
+    SPIInitDef.FirstBit = SPI_FIRSTBIT_MSB;
+    SPIInitDef.TIMode = SPI_TIMODE_DISABLE;
+    SPIInitDef.CRCCalculation = SPI_CRCCALCULATION_DISABLE;
+    SPIInitDef.CRCPolynomial = 0;
+
+    s_hspi2 = {};
+    s_hspi2.Instance = SPI2;
+    s_hspi2.Init = SPIInitDef;
+
+    HAL_SPI_Init(&s_hspi2);
+}
+#endif
+
+extern "C" int main()
+{
+#if 0
+    GPIO_Config();
+    SPI_Config();
+#endif
+
+    ExampleInit();
+
+    DisplayConfig config = 
+    {
+        0, 0, // row/col start
+    };
+
+    Dummy_Canvas canvas(config);
+
+    uint32_t tick = 0;
+    uint32_t timer = 0;
+    char frameTime[16];
+
+    while(true)
+    {
+        tick = 0;
+        canvas.setFont(&Picopixel);
+
+        canvas.display.begin();
+        ExampleTick(canvas);
+        canvas.setColors(0xffff, 0x0000);
+        canvas.setFont(&Picopixel);
+        canvas.drawText(96, 0, frameTime);
+        canvas.display.end();
+        timer = (0 - tick) / (1 / 1000000);
         //sprintf(frameTime, "%u us", timer);
     }
 

@@ -6,6 +6,8 @@ SET(CMAKE_CXX_STANDARD 17)
 
 INCLUDE(configs)
 
+
+
 IF(DEFINED STM32_FAMILY)
 	ADD_DEFINITIONS(-DSTM32F103xB)
 	ADD_SUBDIRECTORY(drivers/STM32F1xx_HAL_Driver)
@@ -22,9 +24,22 @@ IF(DEFINED STM32_FAMILY)
 	GENERATE_LINKER_FILE(LINKER_FILE)
 
 	ADD_DEFINITIONS(-DPLATFORM_STM32)
+ELSEIF(DEFINED RPI_RP2)
+	INCLUDE(pico_sdk_import)
+
+	ADD_DEFINITIONS(-DPLATFORM_RPI_RP2)
 ELSE()
+
 	ADD_DEFINITIONS(-DPLATFORM_PC)
 ENDIF()
+
+PROJECT(gfx_library)
+
+
+IF(DEFINED RPI_RP2)
+	pico_sdk_init()
+ENDIF()
+
 
 SET(INCLUDE_FILES
 "include/canvas.h"
@@ -81,8 +96,8 @@ ADD_EXECUTABLE(00-canvas-usage ${EXAMPLE_00_FILES})
 ADD_EXECUTABLE(01-cmdlist-usage ${EXAMPLE_01_FILES})
 ADD_EXECUTABLE(02-tilecanvas-usage ${EXAMPLE_02_FILES})
 
-SET_PROPERTY(TARGET gfx_library_testbed
-             PROPERTY INTERPROCEDURAL_OPTIMIZATION TRUE)
+# SET_PROPERTY(TARGET gfx_library_testbed
+#              PROPERTY INTERPROCEDURAL_OPTIMIZATION TRUE)
 
 IF(DEFINED STM32_FAMILY)
 	TARGET_LINK_LIBRARIES(gfx_library STM32${STM32_FAMILY}xx_HAL_Driver cmsis startup)
@@ -98,6 +113,17 @@ IF(DEFINED STM32_FAMILY)
 
 	TARGET_LINK_OPTIONS(02-tilecanvas-usage PUBLIC -T ${LINKER_FILE})
 	TARGET_LINK_LIBRARIES(02-tilecanvas-usage gfx_library)
+
+ELSEIF(DEFINED RPI_RP2)
+	TARGET_LINK_LIBRARIES(gfx_library_testbed gfx_library pico_stdlib)
+	TARGET_LINK_LIBRARIES(00-canvas-usage gfx_library pico_stdlib)
+	TARGET_LINK_LIBRARIES(01-cmdlist-usage gfx_library pico_stdlib)
+	TARGET_LINK_LIBRARIES(02-tilecanvas-usage gfx_library pico_stdlib)
+
+	pico_add_extra_outputs(gfx_library_testbed)
+	pico_add_extra_outputs(00-canvas-usage)
+	pico_add_extra_outputs(01-cmdlist-usage)
+	pico_add_extra_outputs(02-tilecanvas-usage)
 
 ELSE()
 	TARGET_LINK_LIBRARIES(gfx_library_testbed gfx_library SDL2)
