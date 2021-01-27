@@ -9,5 +9,8 @@
 
 //#  define USE_CRC_PERIPHERAL
 
+#elif defined(PLATFORM_RPI_RP2)
+#  include "pico/stdlib.h"
+#  include "hardware/spi.h"
 #endif
 

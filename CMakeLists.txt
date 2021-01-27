@@ -33,16 +33,16 @@ ELSE()
 	ADD_DEFINITIONS(-DPLATFORM_PC)
 ENDIF()
 
-PROJECT(gfx_library)
-
+PROJECT(gfx_library C CXX)
+SET(CMAKE_C_STANDARD 11)
+SET(CMAKE_CXX_STANDARD 17)
 
 IF(DEFINED RPI_RP2)
 	pico_sdk_init()
 ENDIF()
 
-
 SET(INCLUDE_FILES
-"include/canvas.h"
+	"include/canvas.h"
 	"include/commandlist.h"
 	"include/commands.h"
 	"include/gfxfont.h"
@@ -115,10 +115,12 @@ IF(DEFINED STM32_FAMILY)
 	TARGET_LINK_LIBRARIES(02-tilecanvas-usage gfx_library)
 
 ELSEIF(DEFINED RPI_RP2)
-	TARGET_LINK_LIBRARIES(gfx_library_testbed gfx_library pico_stdlib)
-	TARGET_LINK_LIBRARIES(00-canvas-usage gfx_library pico_stdlib)
-	TARGET_LINK_LIBRARIES(01-cmdlist-usage gfx_library pico_stdlib)
-	TARGET_LINK_LIBRARIES(02-tilecanvas-usage gfx_library pico_stdlib)
+	TARGET_LINK_LIBRARIES(gfx_library pico_stdlib hardware_spi)
+
+	TARGET_LINK_LIBRARIES(gfx_library_testbed gfx_library)
+	TARGET_LINK_LIBRARIES(00-canvas-usage gfx_library)
+	TARGET_LINK_LIBRARIES(01-cmdlist-usage gfx_library)
+	TARGET_LINK_LIBRARIES(02-tilecanvas-usage gfx_library)
 
 	pico_add_extra_outputs(gfx_library_testbed)
 	pico_add_extra_outputs(00-canvas-usage)

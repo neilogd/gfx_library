@@ -356,30 +356,7 @@ extern "C" void assert_failed(uint8_t* file, uint32_t line)
 #elif defined(PLATFORM_RPI_RP2)
 
 #include "pico/stdlib.h"
-
-#if 0
-template<>
-struct IRQHandler<VectorTableEntry::Systick>
-{
-    static constexpr auto LambdaHandler = [](){ 
-        HAL_IncTick();
-        HAL_SYSTICK_IRQHandler();
-    };
-    using constant_t = std::integral_constant<void(*)(), +LambdaHandler>;
-};
-
-
-template<>
-struct IRQHandler<VectorTableEntry::Dma1Channel5>
-{
-    static constexpr auto LambdaHandler = [](){ 
-        while(true);
-    };
-    using constant_t = std::integral_constant<void(*)(), +LambdaHandler>;
-};
-
-#include "vectors.h"
-#endif
+#include "hardware/spi.h"
 
 #include "display_st7735.h"
 
@@ -419,74 +396,34 @@ public:
     }
 };
 
-#if 0
-static const uint16_t LCD_CS = GPIO_PIN_13;
-static const uint16_t LCD_RST = GPIO_PIN_14;
-static const uint16_t LCD_DC = GPIO_PIN_15;
+static const uint16_t LCD_CS = 5;
+static const uint16_t LCD_RST = 6;
+static const uint16_t LCD_DC = 7;
 
-static const uint16_t SPI2_MOSI = GPIO_PIN_15;
-static const uint16_t SPI2_MISO = GPIO_PIN_14;
-static const uint16_t SPI2_SCLK = GPIO_PIN_13;
-static const uint16_t SPI2_NSS = GPIO_PIN_12;
+static const uint16_t SPI2_MOSI = 3;
+static const uint16_t SPI2_MISO = 4;
+static const uint16_t SPI2_SCLK = 2;
+static const uint16_t SPI2_NSS = 5;
 
-void GPIO_Config()
+int main()
 {
-    __HAL_RCC_GPIOA_CLK_ENABLE();
-    __HAL_RCC_GPIOB_CLK_ENABLE();
-    __HAL_RCC_GPIOC_CLK_ENABLE();
-    // GPIO:
-    GPIO_InitTypeDef GPIO_InitStruct;
-    GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
-    GPIO_InitStruct.Pull = GPIO_PULLDOWN;
-    GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_HIGH;
+    stdio_init_all();
+    spi_init(spi0, 8 * 1000 * 1000);
+    gpio_set_function(SPI2_MISO, GPIO_FUNC_SPI);
+    gpio_set_function(SPI2_SCLK, GPIO_FUNC_SPI);
+    gpio_set_function(SPI2_MOSI, GPIO_FUNC_SPI);
 
-    GPIO_InitStruct.Pin = LCD_CS | LCD_RST | LCD_DC;
-    HAL_GPIO_Init(LCD_GPIO, &GPIO_InitStruct);
+    gpio_init(LCD_CS);
+    gpio_init(LCD_RST);
+    gpio_init(LCD_DC);
+    gpio_set_dir(LCD_CS, GPIO_OUT);
+    gpio_set_dir(LCD_RST, GPIO_OUT);
+    gpio_set_dir(LCD_DC, GPIO_OUT);
+    gpio_put(LCD_CS, 0);
+    gpio_put(LCD_RST, 0);
+    gpio_put(LCD_DC, 0);
 
-    // Init alternate function on SPI2 pins.
-    GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
-    GPIO_InitStruct.Pull = GPIO_NOPULL;
-    GPIO_InitStruct.Pin = SPI2_MOSI | SPI2_SCLK | SPI2_NSS;
-    HAL_GPIO_Init(SPI2_GPIO, &GPIO_InitStruct);
-
-    GPIO_InitStruct.Mode = GPIO_MODE_AF_INPUT;
-    GPIO_InitStruct.Pin = SPI2_MISO;
-    HAL_GPIO_Init(SPI2_GPIO, &GPIO_InitStruct);
-}
-
-void SPI_Config()
-{
-    __HAL_RCC_SPI2_CLK_ENABLE();
-
-    // SPI2 init.
-    SPI_InitTypeDef SPIInitDef = {};
-    SPIInitDef.Mode = SPI_MODE_MASTER;
-    SPIInitDef.Direction = SPI_DIRECTION_1LINE;
-    SPIInitDef.DataSize = SPI_DATASIZE_8BIT;
-    SPIInitDef.CLKPolarity = SPI_POLARITY_LOW;
-    SPIInitDef.CLKPhase = SPI_PHASE_1EDGE;
-    SPIInitDef.NSS = SPI_NSS_SOFT;
-    SPIInitDef.BaudRatePrescaler = SPI_BAUDRATEPRESCALER_2;
-    SPIInitDef.FirstBit = SPI_FIRSTBIT_MSB;
-    SPIInitDef.TIMode = SPI_TIMODE_DISABLE;
-    SPIInitDef.CRCCalculation = SPI_CRCCALCULATION_DISABLE;
-    SPIInitDef.CRCPolynomial = 0;
-
-    s_hspi2 = {};
-    s_hspi2.Instance = SPI2;
-    s_hspi2.Init = SPIInitDef;
-
-    HAL_SPI_Init(&s_hspi2);
-}
-#endif
-
-extern "C" int main()
-{
-#if 0
-    GPIO_Config();
-    SPI_Config();
-#endif
-
+    
     ExampleInit();
 
     DisplayConfig config = 

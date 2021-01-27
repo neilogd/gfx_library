@@ -229,6 +229,19 @@ namespace
     static const uint16_t SPI2_SCLK = GPIO_PIN_13;
     static const uint16_t SPI2_NSS = GPIO_PIN_12;
 #endif // defined(PLATFORM_STM32)
+
+#if defined(PLATFORM_RPI_RP2)
+    static const uint16_t LCD_CS = 5;
+    static const uint16_t LCD_RST = 6;
+    static const uint16_t LCD_DC = 7;
+
+    static const uint16_t SPI2_MOSI = 3;
+    static const uint16_t SPI2_MISO = 4;
+    static const uint16_t SPI2_SCLK = 2;
+    static const uint16_t SPI2_NSS = 5;
+
+    #define SPI_PORT spi0
+#endif // defined(PLATFORM_RPI_RP2)
 }
 
 DisplayST7735::DisplayST7735()
@@ -247,9 +260,7 @@ void DisplayST7735::init(const DisplayConfig& config)
 #if defined(PLATFORM_STM32)
     hspi_ = config.hspi;
     hdma_ = config.hdma;
-#endif
 
-#if defined(PLATFORM_STM32)
     // Do reset.
     HAL_GPIO_WritePin(LCD_GPIO, LCD_RST, GPIO_PIN_SET);
     HAL_GPIO_WritePin(LCD_GPIO, LCD_RST, GPIO_PIN_RESET);
@@ -261,7 +272,10 @@ void DisplayST7735::init(const DisplayConfig& config)
 
 #if defined(PLATFORM_STM32)
     HAL_GPIO_WritePin(LCD_GPIO, LCD_CS, GPIO_PIN_RESET);
+#elif defined(PLATFORM_RPI_RP2)
+    gpio_put(LCD_CS, 0);
 #endif
+
     uint8_t madctl = ST77XX_MADCTL_MX | ST77XX_MADCTL_MV | ST77XX_MADCTL_RGB;
     sendCommand(ST77XX_MADCTL, &madctl, 1);
 
@@ -283,6 +297,8 @@ void DisplayST7735::begin()
 {
 #if defined(PLATFORM_STM32)
     HAL_GPIO_WritePin(LCD_GPIO, LCD_CS, GPIO_PIN_RESET);
+#elif defined(PLATFORM_RPI_RP2)
+    gpio_put(LCD_CS, 0);
 #endif
 }
 
@@ -290,6 +306,8 @@ void DisplayST7735::end()
 {
 #if defined(PLATFORM_STM32)
     HAL_GPIO_WritePin(LCD_GPIO, LCD_CS, GPIO_PIN_SET);
+#elif defined(PLATFORM_RPI_RP2)
+    gpio_put(LCD_CS, 1);
 #endif
 }
 
@@ -316,6 +334,20 @@ void DisplayST7735::setAddrWindow(int16_t x, int16_t y, int16_t w, int16_t h)
     HAL_SPI_Transmit(hspi_, &pya[0], 1, 100);
 
     writeCommand(ST77XX_RAMWR); // write to RAM
+#elif defined(PLATFORM_RPI_RP2)
+    writeCommand(ST77XX_CASET);
+    spi_write_blocking(SPI_PORT, &pxa[3], 1);
+    spi_write_blocking(SPI_PORT, &pxa[2], 1);
+    spi_write_blocking(SPI_PORT, &pxa[1], 1);
+    spi_write_blocking(SPI_PORT, &pxa[0], 1);
+
+    writeCommand(ST77XX_RASET);
+    spi_write_blocking(SPI_PORT, &pya[3], 1);
+    spi_write_blocking(SPI_PORT, &pya[2], 1);
+    spi_write_blocking(SPI_PORT, &pya[1], 1);
+    spi_write_blocking(SPI_PORT, &pya[0], 1);
+
+    writeCommand(ST77XX_RAMWR); // write to RAM
 #endif
 }
 
@@ -327,6 +359,8 @@ void DisplayST7735::writePixels(const uint16_t* pixels, int32_t numPixels)
         HAL_SPI_Transmit_DMA(hspi_, (uint8_t*)&pixels[0], numPixels * 2);
     else
         HAL_SPI_Transmit(hspi_, (uint8_t*)&pixels[0], numPixels * 2, 100);
+#elif defined(PLATFORM_RPI_RP2)
+    spi_write_blocking(SPI_PORT, (uint8_t*)&pixels[0], numPixels * 2);
 #endif
     // TODO: Remove!
     waitForReady();
@@ -347,6 +381,11 @@ void DisplayST7735::sendCommand(uint8_t cmd, const uint8_t* addr, uint8_t num)
     HAL_SPI_Transmit(hspi_, &cmd, 1, 100);
     HAL_GPIO_WritePin(GPIOC, LCD_DC, GPIO_PIN_SET);
     HAL_SPI_Transmit(hspi_, const_cast<uint8_t*>(addr), num, 100);
+#elif defined(PLATFORM_RPI_RP2)
+    gpio_put(LCD_DC, 0);
+    spi_write_blocking(SPI_PORT, &cmd, 1);
+    gpio_put(LCD_DC, 1);
+    spi_write_blocking(SPI_PORT, const_cast<uint8_t*>(addr), num);
 #endif
 }
 
@@ -357,6 +396,10 @@ void DisplayST7735::writeCommand(uint8_t cmd)
     HAL_GPIO_WritePin(GPIOC, LCD_DC, GPIO_PIN_RESET);
     HAL_SPI_Transmit(hspi_, &cmd, 1, 100);
     HAL_GPIO_WritePin(GPIOC, LCD_DC, GPIO_PIN_SET);
+#elif defined(PLATFORM_RPI_RP2)
+    gpio_put(LCD_DC, 0);
+    spi_write_blocking(SPI_PORT, &cmd, 1);
+    gpio_put(LCD_DC, 1);
 #endif
 }
 
@@ -382,6 +425,8 @@ void DisplayST7735::writeCommandStream(const uint8_t *addr)
             if(ms == 255) ms = 500;
 #if defined(PLATFORM_STM32)
             HAL_Delay(ms);
+#elif defined(PLATFORM_RPI_RP2)
+            sleep_ms(ms);
 #endif
         }
     }

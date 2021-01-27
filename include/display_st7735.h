@@ -11,6 +11,7 @@ struct DisplayConfig
     SPI_HandleTypeDef* hspi = nullptr;
     DMA_HandleTypeDef* hdma = nullptr;
 #endif
+
 };
 
 class DisplayST7735
