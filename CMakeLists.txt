@@ -49,17 +49,6 @@ SET(EXAMPLE_TESTBED_FILES
 	"examples/testbed.cpp"
 )
 
-SET(EXAMPLE_SSRE_FILES
-	"examples/ssre/Source/Library/SSRE_Fixed.c"
-	"examples/ssre/Source/Library/SSRE_Mat44.c"
-	"examples/ssre/Source/Library/SSRE_Math.c"
-	"examples/ssre/Source/Library/SSRE_MatrixStack.c"
-	"examples/ssre/Source/Library/SSRE_PixelBuffer.c"
-	"examples/ssre/Source/Library/SSRE_Vec4.c"
-	"examples/ssre/Source/Library/SSRE_VertexProcessor.c"
-	"examples/ssre/Source/Library/SSRE.c"
-)
-
 SET(EXAMPLE_00_FILES
 	"examples/main.cpp"
 	"examples/00-canvas-usage.cpp"

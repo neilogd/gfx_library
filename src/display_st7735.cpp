@@ -1,4 +1,3 @@
-#if !defined(PLATFORM_PC)
 #include "display_st7735.h"
 
 #include <memory.h>
@@ -217,6 +216,7 @@ namespace
             100                                                     //         100 ms delay
     };    
 
+#if defined(PLATFORM_STM32)
     static GPIO_TypeDef* LCD_GPIO = GPIOC;
     static GPIO_TypeDef* SPI2_GPIO = GPIOB;
 
@@ -228,83 +228,42 @@ namespace
     static const uint16_t SPI2_MISO = GPIO_PIN_14;
     static const uint16_t SPI2_SCLK = GPIO_PIN_13;
     static const uint16_t SPI2_NSS = GPIO_PIN_12;
+#endif // defined(PLATFORM_STM32)
 }
 
 DisplayST7735::DisplayST7735()
 {
+
 }
 
 DisplayST7735::~DisplayST7735()
 {
 }
 
-void DisplayST7735::init()
+void DisplayST7735::init(const DisplayConfig& config)
 {
-    // GPIO:
-    GPIO_InitTypeDef GPIO_InitStruct;
-    GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
-    GPIO_InitStruct.Pull = GPIO_PULLDOWN;
-    GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_HIGH;
+    colStart_ = config.colStart;
+    rowStart_ = config.rowStart;
+#if defined(PLATFORM_STM32)
+    hspi_ = config.hspi;
+    hdma_ = config.hdma;
+#endif
 
-    GPIO_InitStruct.Pin = LCD_CS | LCD_RST | LCD_DC;
-    HAL_GPIO_Init(LCD_GPIO, &GPIO_InitStruct);
-
-    // Init alternate function on SPI2 pins.
-    GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
-    GPIO_InitStruct.Pull = GPIO_NOPULL;
-    GPIO_InitStruct.Pin = SPI2_MOSI | SPI2_SCLK | SPI2_NSS;
-    HAL_GPIO_Init(SPI2_GPIO, &GPIO_InitStruct);
-
-    GPIO_InitStruct.Mode = GPIO_MODE_AF_INPUT;
-    GPIO_InitStruct.Pin = SPI2_MISO;
-    HAL_GPIO_Init(SPI2_GPIO, &GPIO_InitStruct);
-
-    // DMA init.
-    DMA_InitTypeDef DMAInitDef = {};
-    DMAInitDef.Direction = DMA_MEMORY_TO_PERIPH;
-    DMAInitDef.PeriphInc = DMA_PINC_ENABLE;
-    DMAInitDef.MemInc = DMA_MINC_ENABLE;
-    DMAInitDef.PeriphDataAlignment = DMA_PDATAALIGN_BYTE;
-    DMAInitDef.MemDataAlignment = DMA_MDATAALIGN_BYTE;
-    DMAInitDef.Mode = DMA_NORMAL;
-    DMAInitDef.Priority = DMA_PRIORITY_HIGH;
-
-    // SPI2 init.
-    SPI_InitTypeDef SPIInitDef = {};
-    SPIInitDef.Mode = SPI_MODE_MASTER;
-    SPIInitDef.Direction = SPI_DIRECTION_1LINE;
-    SPIInitDef.DataSize = SPI_DATASIZE_8BIT;
-    SPIInitDef.CLKPolarity = SPI_POLARITY_LOW;
-    SPIInitDef.CLKPhase = SPI_PHASE_1EDGE;
-    SPIInitDef.NSS = SPI_NSS_SOFT;
-    SPIInitDef.BaudRatePrescaler = SPI_BAUDRATEPRESCALER_2;
-    SPIInitDef.FirstBit = SPI_FIRSTBIT_MSB;
-    SPIInitDef.TIMode = SPI_TIMODE_DISABLE;
-    SPIInitDef.CRCCalculation = SPI_CRCCALCULATION_DISABLE;
-    SPIInitDef.CRCPolynomial = 0;
-
-    hspi_ = {};
-    hspi_.Instance = SPI2;
-    hspi_.Init = SPIInitDef;
-
-    __HAL_RCC_SPI2_CLK_ENABLE();
-
-    HAL_SPI_Init(&hspi_);
-
+#if defined(PLATFORM_STM32)
     // Do reset.
     HAL_GPIO_WritePin(LCD_GPIO, LCD_RST, GPIO_PIN_SET);
     HAL_GPIO_WritePin(LCD_GPIO, LCD_RST, GPIO_PIN_RESET);
     HAL_GPIO_WritePin(LCD_GPIO, LCD_RST, GPIO_PIN_SET);
+#endif
 
     begin();
-    writeCommandStream(&hspi_, Rcmd1);
+    writeCommandStream(Rcmd1);
 
-    colstart_ = 1;
-    rowstart_ = 2;
-
+#if defined(PLATFORM_STM32)
     HAL_GPIO_WritePin(LCD_GPIO, LCD_CS, GPIO_PIN_RESET);
+#endif
     uint8_t madctl = ST77XX_MADCTL_MX | ST77XX_MADCTL_MV | ST77XX_MADCTL_RGB;
-    sendCommand(&hspi_, ST77XX_MADCTL, &madctl, 1);
+    sendCommand(ST77XX_MADCTL, &madctl, 1);
 
     // Clear to black.
     uint16_t black[32];
@@ -315,68 +274,95 @@ void DisplayST7735::init()
         writePixels(black, 32);
 
     // Turn on display.
-    writeCommandStream(&hspi_, Rcmd3);
+    writeCommandStream(Rcmd3);
 
     end();
 }
 
 void DisplayST7735::begin()
 {
+#if defined(PLATFORM_STM32)
     HAL_GPIO_WritePin(LCD_GPIO, LCD_CS, GPIO_PIN_RESET);
+#endif
 }
 
 void DisplayST7735::end()
 {
+#if defined(PLATFORM_STM32)
     HAL_GPIO_WritePin(LCD_GPIO, LCD_CS, GPIO_PIN_SET);
+#endif
 }
 
 void DisplayST7735::setAddrWindow(int16_t x, int16_t y, int16_t w, int16_t h)
 {
-    x += colstart_;
-    y += rowstart_;
+    x += colStart_;
+    y += rowStart_;
     uint32_t xa = ((uint32_t)x << 16) | (x+w-1);
     uint32_t ya = ((uint32_t)y << 16) | (y+h-1);
     uint8_t* pxa = (uint8_t*)&xa;
     uint8_t* pya = (uint8_t*)&ya;
 
-    writeCommand(&hspi_, ST77XX_CASET);
-    HAL_SPI_Transmit(&hspi_, &pxa[3], 1, 100);
-    HAL_SPI_Transmit(&hspi_, &pxa[2], 1, 100);
-    HAL_SPI_Transmit(&hspi_, &pxa[1], 1, 100);
-    HAL_SPI_Transmit(&hspi_, &pxa[0], 1, 100);
+#if defined(PLATFORM_STM32)
+    writeCommand(ST77XX_CASET);
+    HAL_SPI_Transmit(hspi_, &pxa[3], 1, 100);
+    HAL_SPI_Transmit(hspi_, &pxa[2], 1, 100);
+    HAL_SPI_Transmit(hspi_, &pxa[1], 1, 100);
+    HAL_SPI_Transmit(hspi_, &pxa[0], 1, 100);
 
-    writeCommand(&hspi_, ST77XX_RASET);
-    HAL_SPI_Transmit(&hspi_, &pya[3], 1, 100);
-    HAL_SPI_Transmit(&hspi_, &pya[2], 1, 100);
-    HAL_SPI_Transmit(&hspi_, &pya[1], 1, 100);
-    HAL_SPI_Transmit(&hspi_, &pya[0], 1, 100);
+    writeCommand(ST77XX_RASET);
+    HAL_SPI_Transmit(hspi_, &pya[3], 1, 100);
+    HAL_SPI_Transmit(hspi_, &pya[2], 1, 100);
+    HAL_SPI_Transmit(hspi_, &pya[1], 1, 100);
+    HAL_SPI_Transmit(hspi_, &pya[0], 1, 100);
 
-    writeCommand(&hspi_, ST77XX_RAMWR); // write to RAM
+    writeCommand(ST77XX_RAMWR); // write to RAM
+#endif
 }
 
 void DisplayST7735::writePixels(const uint16_t* pixels, int32_t numPixels)
 {
-    HAL_SPI_Transmit(&hspi_, (uint8_t*)&pixels[0], numPixels * 2, 100);
+    waitForReady();
+#if defined(PLATFORM_STM32)
+    if(hdma_)
+        HAL_SPI_Transmit_DMA(hspi_, (uint8_t*)&pixels[0], numPixels * 2);
+    else
+        HAL_SPI_Transmit(hspi_, (uint8_t*)&pixels[0], numPixels * 2, 100);
+#endif
+    // TODO: Remove!
+    waitForReady();
 }
 
-void DisplayST7735::sendCommand(SPI_HandleTypeDef* hspi, uint8_t cmd, const uint8_t* addr, uint8_t num)
+void DisplayST7735::waitForReady()
 {
-    HAL_GPIO_WritePin(GPIOC, LCD_DC, GPIO_PIN_RESET);
-    HAL_SPI_Transmit(hspi, &cmd, 1, 100);
-    HAL_GPIO_WritePin(GPIOC, LCD_DC, GPIO_PIN_SET);
-    HAL_SPI_Transmit(hspi, const_cast<uint8_t*>(addr), num, 100);
+#if defined(PLATFORM_STM32)
+    while(HAL_SPI_GetState(hspi_) != HAL_SPI_STATE_READY);
+#endif
 }
 
-void DisplayST7735::writeCommand(SPI_HandleTypeDef* hspi, uint8_t cmd)
+void DisplayST7735::sendCommand(uint8_t cmd, const uint8_t* addr, uint8_t num)
 {
+    waitForReady();
+#if defined(PLATFORM_STM32)
     HAL_GPIO_WritePin(GPIOC, LCD_DC, GPIO_PIN_RESET);
-    HAL_SPI_Transmit(hspi, &cmd, 1, 100);
+    HAL_SPI_Transmit(hspi_, &cmd, 1, 100);
     HAL_GPIO_WritePin(GPIOC, LCD_DC, GPIO_PIN_SET);
+    HAL_SPI_Transmit(hspi_, const_cast<uint8_t*>(addr), num, 100);
+#endif
+}
+
+void DisplayST7735::writeCommand(uint8_t cmd)
+{
+    waitForReady();
+#if defined(PLATFORM_STM32)
+    HAL_GPIO_WritePin(GPIOC, LCD_DC, GPIO_PIN_RESET);
+    HAL_SPI_Transmit(hspi_, &cmd, 1, 100);
+    HAL_GPIO_WritePin(GPIOC, LCD_DC, GPIO_PIN_SET);
+#endif
 }
 
 // Adafruit st7735 lib.
 // https://github.com/adafruit/Adafruit-ST7735-Library/blob/master/Adafruit_ST77xx.cpp
-void DisplayST7735::writeCommandStream(SPI_HandleTypeDef* hspi, const uint8_t *addr)
+void DisplayST7735::writeCommandStream(const uint8_t *addr)
 {
     uint8_t    numCommands, cmd, numArgs;
     uint16_t ms;
@@ -387,16 +373,16 @@ void DisplayST7735::writeCommandStream(SPI_HandleTypeDef* hspi, const uint8_t *a
         numArgs    = *addr++;
         ms             = numArgs & ST_CMD_DELAY;
         numArgs &= ~ST_CMD_DELAY;
-        sendCommand(hspi, cmd, addr, numArgs);
+        sendCommand(cmd, addr, numArgs);
         addr += numArgs;
 
         if(ms)
         {
             ms = *addr++;
             if(ms == 255) ms = 500;
+#if defined(PLATFORM_STM32)
             HAL_Delay(ms);
+#endif
         }
     }
 }
-
-#endif
