@@ -408,10 +408,12 @@ static const uint16_t SPI2_NSS = 5;
 int main()
 {
     stdio_init_all();
-    spi_init(spi0, 8 * 1000 * 1000);
+    spi_init(spi0, 24 * 1000 * 1000);
     gpio_set_function(SPI2_MISO, GPIO_FUNC_SPI);
     gpio_set_function(SPI2_SCLK, GPIO_FUNC_SPI);
     gpio_set_function(SPI2_MOSI, GPIO_FUNC_SPI);
+
+    spi_set_format(spi0, 8, SPI_CPOL_0, SPI_CPHA_0, SPI_MSB_FIRST);
 
     gpio_init(LCD_CS);
     gpio_init(LCD_RST);
@@ -419,16 +421,21 @@ int main()
     gpio_set_dir(LCD_CS, GPIO_OUT);
     gpio_set_dir(LCD_RST, GPIO_OUT);
     gpio_set_dir(LCD_DC, GPIO_OUT);
-    gpio_put(LCD_CS, 0);
-    gpio_put(LCD_RST, 0);
+    gpio_put(LCD_CS, 1);
+    gpio_put(LCD_RST, 1);
     gpio_put(LCD_DC, 0);
+
+    const uint LED_PIN = 25;
+    gpio_init(LED_PIN);
+    gpio_set_dir(LED_PIN, GPIO_OUT);
+
 
     
     ExampleInit();
 
     DisplayConfig config = 
     {
-        0, 0, // row/col start
+        1, 2, // row/col start
     };
 
     Dummy_Canvas canvas(config);
@@ -447,8 +454,11 @@ int main()
         canvas.setColors(0xffff, 0x0000);
         canvas.setFont(&Picopixel);
         canvas.drawText(96, 0, frameTime);
+
+        gpio_put(LED_PIN, 1);
         canvas.display.end();
-        timer = (0 - tick) / (1 / 1000000);
+        gpio_put(LED_PIN, 0);
+        //timer = (0 - tick) / (1 / 1000000);
         //sprintf(frameTime, "%u us", timer);
     }
 

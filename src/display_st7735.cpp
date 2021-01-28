@@ -65,6 +65,8 @@ namespace
         ST7735_GMCTRN1 = 0xE1,
     };
 
+    // Intent is to try trim this down and pack it tighter in memor, but in the mean time
+    // it's straight from here: https://github.com/adafruit/Adafruit-ST7735-Library/blob/master/Adafruit_ST7735.cpp
     static const uint8_t
     Bcmd[] = {                                                      // Init commands for 7735B screens
         18,                                                         // 18 commands in list:
